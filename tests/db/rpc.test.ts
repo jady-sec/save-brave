@@ -28,6 +28,20 @@ describe('create_household', () => {
   });
 });
 
+describe('household_members_view', () => {
+  test("members see each other's emails; outsiders see only their own household", async () => {
+    const H = await call<string>(A, `create_household('Home')`);
+    await db.query('insert into household_members (household_id, user_id) values ($1, $2)', [H, B]);
+    await call(C, `create_household('Other')`);
+    const rows = async (uid: string) =>
+      (await asUser<{ user_id: string; email: string }>(db, uid, 'select * from household_members_view() order by email')).rows;
+    expect(await rows(B)).toEqual([{ user_id: A, email: 'a@t' }, { user_id: B, email: 'b@t' }]);
+    expect(await rows(C)).toEqual([{ user_id: C, email: 'c@t' }]);
+    expect(await rows(D)).toEqual([]);
+    await expect(asUser(db, null, 'select * from household_members_view()')).rejects.toThrow(/permission denied/);
+  });
+});
+
 describe('invites', () => {
   let H: string, code: string;
   beforeEach(async () => {

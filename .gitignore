@@ -4,3 +4,4 @@ dist
 dbs.txt
 .superpowers
 *.tsbuildinfo
+supabase/.temp
