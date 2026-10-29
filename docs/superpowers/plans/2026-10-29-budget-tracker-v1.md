@@ -185,7 +185,7 @@ export type SplitInput = { mode: 'equal' } | { mode: 'amounts'; cents: Record<st
 
 **Files:** Create `src/screens/Household.tsx`, `src/lib/api.ts` (start). Modify `src/App.tsx`, `src/screens/Settings.tsx`.
 
-**Produces (api.ts):** `getMe(): Promise<{ userId: string; householdId: string | null; members: { user_id: string; email: string }[] }>`; `createHousehold(name: string)`; `createInvite(): Promise<string>`; `redeemInvite(code: string)`. Member emails come from a `household_member_emails` view (security-invoker, joins `auth.users` email only for `is_member` rows) — add to `0003`.
+**Produces (api.ts):** `getMe(): Promise<{ userId: string; householdId: string | null; members: { user_id: string; email: string }[] }>`; `createHousehold(name: string)`; `createInvite(): Promise<string>`; `redeemInvite(code: string): Promise<string | null>` (null = wrong/used/expired code; RPC raises only for "too many attempts", "household is full", "already in a household"). Member emails come from a `household_member_emails` view (security-invoker, joins `auth.users` email only for `is_member` rows) — add to `0003`.
 
 - [ ] Gate in App: signed in with no household → Household screen offers "Create household" or "Join with code". Personal features still work without a household (shared toggle hidden).
 - [ ] Creator sees "Invite partner": shows code + share link `/?join=CODE` + expiry time. Opening the link pre-fills the join field after login.
@@ -201,7 +201,7 @@ export type SplitInput = { mode: 'equal' } | { mode: 'amounts'; cents: Record<st
 
 **Files:** Modify `supabase/migrations/0003_rpc.sql` (or add `0003b` if already applied by the user — new file per change once the user has pushed), `tests/db/rpc.test.ts`.
 
-**Produces:** `save_transaction(p jsonb) returns uuid` — **security invoker** (RLS still applies). Keys: `id?`, `type`, `scope`, `amount_cents`, `date`, `category_id`, `note`, `paid_by`, `splits?: [{user_id, share_cents}]`, `recurring_rule_id?`. Insert or update; for shared, replaces splits. Validates: category scope matches tx scope and belongs to caller/household; shared ⇒ `paid_by` and every split user is a member, exactly the 2 members, `sum(share_cents) = amount_cents`; scope cannot change on update. With `recurring_rule_id`, insert uses `on conflict do nothing` and returns null if the row already existed.
+**Produces:** `save_transaction(p jsonb) returns uuid` — **security invoker** (RLS still applies). Keys: `id?`, `type`, `scope`, `amount_cents`, `date`, `category_id`, `note`, `paid_by`, `splits?: [{user_id, share_cents}]`, `recurring_rule_id?`. Insert or update; for shared, replaces splits. Category, payer, split-member and scope-immutability checks already live in `0004_integrity.sql` triggers (M2 review fix). New in M4: a **deferred constraint trigger** (`deferrable initially deferred`) on `transactions` and `transaction_splits` enforcing that every shared transaction's splits cover both members and `sum(share_cents) = amount_cents` at commit, so direct PostgREST writes cannot bypass it. With `recurring_rule_id`, insert uses `on conflict do nothing` and returns null if the row already existed.
 
 - [ ] Failing tests: personal insert works; split sum ≠ amount rejected; split with C's id rejected; using B's personal category rejected; changing scope on update rejected; B updating A's shared entry replaces splits; duplicate `(recurring_rule_id, date)` returns null and leaves one row.
 - [ ] Implement, PASS.

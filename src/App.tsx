@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { AddSheet } from './screens/AddSheet';
+import { Login } from './screens/Login';
+import { supabase } from './lib/supabase';
+import { useSession } from './useSession';
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -24,9 +27,21 @@ function More() {
   );
 }
 
+function Settings() {
+  return (
+    <main className="screen">
+      <h1>Settings</h1>
+      <button type="button" className="btn" onClick={() => supabase.auth.signOut()}>Sign out</button>
+    </main>
+  );
+}
+
 export function App() {
+  const session = useSession();
   const [adding, setAdding] = useState(false);
   const closeAdd = useCallback(() => setAdding(false), []);
+  if (session === undefined) return null;
+  if (session === null) return <Login />;
   return (
     <div className="app">
       <Routes>
@@ -37,7 +52,7 @@ export function App() {
         <Route path="/plan" element={<Placeholder title="Plan" />} />
         <Route path="/recurring" element={<Placeholder title="Recurring" />} />
         <Route path="/history" element={<Placeholder title="History" />} />
-        <Route path="/settings" element={<Placeholder title="Settings" />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Routes>
       <BottomNav onAdd={() => setAdding(true)} />
