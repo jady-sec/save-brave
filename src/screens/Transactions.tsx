@@ -7,7 +7,7 @@ import { addMonths, monthKey, todayLocal } from '../lib/month';
 import type { Tx } from '../lib/types';
 import { useMe } from '../me';
 
-const monthLabel = (m: string) => new Date(`${m}-15T12:00`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
+export const monthLabel = (m: string) => new Date(`${m}-15T12:00`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 const dayLabel = (d: string) => new Date(`${d}T12:00`).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
 
 export function MonthSwitcher({ month, onChange }: { month: string; onChange: (m: string) => void }) {

@@ -183,3 +183,32 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .balance-card.owe .balance-big { color: var(--shared); }
 .settle { margin-bottom: 16px; }
 .section-title { font-size: 1rem; margin: 24px 0 8px; color: var(--ink-2); }
+
+/* Plans and month overview (M6): warn is amber, over is red, met targets are green. */
+.segmented.wide { display: grid; margin-bottom: 16px; }
+.ok-text { color: var(--ok); font-weight: 600; }
+.limits { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; }
+.limits legend { font-weight: 600; margin-bottom: 4px; padding: 0; }
+.limits .hint { margin: 0 0 4px; }
+.limit-row { display: grid; grid-template-columns: 1fr 9rem; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid var(--rule); }
+.limit-row input { text-align: right; }
+.alerts { display: grid; gap: 8px; margin-bottom: 16px; }
+.alert { padding: 10px 12px; border-radius: 10px; border: 1px solid; font-size: 0.95rem; }
+.alert.warn { border-color: color-mix(in srgb, var(--warn) 40%, var(--rule)); background: color-mix(in srgb, var(--warn) 10%, var(--panel)); }
+.alert.over { border-color: color-mix(in srgb, var(--over) 40%, var(--rule)); background: color-mix(in srgb, var(--over) 9%, var(--panel)); }
+.totals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.totals div { display: grid; gap: 2px; padding: 12px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--rule); min-width: 0; }
+.totals span { font-size: 0.85rem; color: var(--ink-2); }
+.totals strong { font-size: 1.1rem; overflow-wrap: anywhere; }
+.totals small { color: var(--ink-2); }
+.totals .met strong { color: var(--ok); }
+.totals .short strong { color: var(--warn); }
+.budget-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.budget-rows li { padding: 10px 4px; border-bottom: 1px solid var(--rule); display: grid; gap: 6px; }
+.budget-head { display: flex; justify-content: space-between; gap: 12px; font-weight: 600; }
+.budget-foot { font-size: 0.85rem; }
+.bar { height: 8px; border-radius: 4px; background: var(--rule); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--you); border-radius: inherit; }
+.budget-rows .warn .bar span { background: var(--warn); }
+.budget-rows .over .bar span { background: var(--over); }
+.budget-rows .over .budget-foot { color: var(--over); font-weight: 600; }

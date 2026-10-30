@@ -14,3 +14,8 @@ const cad = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' 
 export function formatCents(cents: number): string {
   return cad.format(cents / 100); // display only; cents/100 is exact enough for 2-dp formatting
 }
+
+/** Like parseCents but accepts zero ("0", "0.00"); for plan amounts and limits. */
+export function parseCentsOrZero(input: string): number | null {
+  return /^\s*0+(\.0{0,2})?\s*$/.test(input) ? 0 : parseCents(input);
+}

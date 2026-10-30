@@ -2,7 +2,7 @@
 import { isNetworkError } from './cache';
 import { monthBounds } from './month';
 import { supabase } from './supabase';
-import type { Category, Scope, Settlement, Split, Tx, TxType } from './types';
+import type { Category, Plan, Scope, Settlement, Split, Tx, TxType } from './types';
 
 export interface Member { user_id: string; email: string }
 export interface Me { userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[] }
@@ -125,4 +125,19 @@ export async function addSettlement(me: Me, to_user: string, amount_cents: numbe
 
 export async function deleteSettlement(id: string): Promise<void> {
   must(await supabase.from('settlements').delete().eq('id', id));
+}
+
+export type PlanOwner = 'me' | 'household';
+export interface PlanFields { expected_income_cents: number; savings_target_cents: number; limits: { category_id: string; limit_cents: number }[] }
+
+/** The plan for `month`, or else the latest one before it: that is carry-forward, nothing is copied. RLS limits 'me' to my own. */
+export async function getPlan(owner: PlanOwner, month: string): Promise<Plan | null> {
+  const q = supabase.from('monthly_plans').select('*, limits:category_limits(category_id, limit_cents)')
+    .not(owner === 'me' ? 'user_id' : 'household_id', 'is', null);
+  return must(await q.lte('month', month).order('month', { ascending: false }).limit(1).maybeSingle()) as Plan | null;
+}
+
+/** Writes exactly this month's plan and replaces its limits in one transaction. */
+export async function savePlan(owner: PlanOwner, month: string, fields: PlanFields): Promise<void> {
+  must(await supabase.rpc('save_plan', { p: { owner, month, ...fields } }));
 }

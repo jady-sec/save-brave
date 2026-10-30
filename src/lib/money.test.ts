@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { formatCents, parseCents } from './money';
+import { formatCents, parseCents, parseCentsOrZero } from './money';
 
 describe('parseCents', () => {
   test.each([
@@ -20,4 +20,9 @@ describe('formatCents', () => {
   });
   test('shows minus for negatives', () => expect(formatCents(-500)).toMatch(/-.*5\.00/));
   test('zero', () => expect(formatCents(0)).toMatch(/0\.00/));
+});
+
+describe('parseCentsOrZero (plan amounts and limits, where 0 is meaningful)', () => {
+  test.each([['0', 0], ['0.00', 0], ['.0', null], ['', null], ['12.50', 1250], ['-1', null], ['abc', null]] as const)(
+    '%s → %s', (input, out) => expect(parseCentsOrZero(input)).toBe(out));
 });

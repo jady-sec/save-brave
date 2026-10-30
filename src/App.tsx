@@ -6,6 +6,8 @@ import { AddSheet } from './screens/AddSheet';
 import { Household, pendingJoin, setPendingJoin } from './screens/Household';
 import { Login } from './screens/Login';
 import { Balance } from './screens/Balance';
+import { Overview } from './screens/Overview';
+import { Plan } from './screens/Plan';
 import { Settings } from './screens/Settings';
 import { Transactions } from './screens/Transactions';
 import type { Tx } from './lib/types';
@@ -64,11 +66,11 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
         </div>
       )}
       <Routes>
-        <Route path="/" element={<Placeholder title="This month" />} />
+        <Route path="/" element={<Overview />} />
         <Route path="/tx" element={<Transactions />} />
         <Route path="/balance" element={<Balance />} />
         <Route path="/more" element={<More />} />
-        <Route path="/plan" element={<Placeholder title="Plan" />} />
+        <Route path="/plan" element={<Plan />} />
         <Route path="/recurring" element={<Placeholder title="Recurring" />} />
         <Route path="/history" element={<Placeholder title="History" />} />
         <Route path="/settings" element={<Settings />} />
