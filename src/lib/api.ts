@@ -2,7 +2,7 @@
 import { isNetworkError } from './cache';
 import { monthBounds } from './month';
 import { supabase } from './supabase';
-import type { Category, Scope, Split, Tx, TxType } from './types';
+import type { Category, Scope, Settlement, Split, Tx, TxType } from './types';
 
 export interface Member { user_id: string; email: string }
 export interface Me { userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[] }
@@ -105,4 +105,24 @@ export async function saveTransaction(input: TxInput): Promise<string> {
 
 export async function deleteTransaction(id: string): Promise<void> {
   must(await supabase.from('transactions').delete().eq('id', id));
+}
+
+/** Every shared entry, all time: the balance is derived from the full history. */
+export async function listShared(): Promise<Tx[]> {
+  const rows = must(await supabase.from('transactions').select('*, splits:transaction_splits(user_id, share_cents)')
+    .eq('scope', 'shared').order('date', { ascending: false }).order('created_at', { ascending: false }));
+  return rows as Tx[];
+}
+
+export async function listSettlements(): Promise<Settlement[]> {
+  return must(await supabase.from('settlements').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })) as Settlement[];
+}
+
+// RLS only accepts a settlement recorded by the person paying (from_user = caller).
+export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string): Promise<void> {
+  must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user: me.userId, to_user, amount_cents, date, created_by: me.userId }));
+}
+
+export async function deleteSettlement(id: string): Promise<void> {
+  must(await supabase.from('settlements').delete().eq('id', id));
 }

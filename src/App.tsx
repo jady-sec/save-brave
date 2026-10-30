@@ -5,6 +5,7 @@ import { MeProvider, useMe } from './me';
 import { AddSheet } from './screens/AddSheet';
 import { Household, pendingJoin, setPendingJoin } from './screens/Household';
 import { Login } from './screens/Login';
+import { Balance } from './screens/Balance';
 import { Settings } from './screens/Settings';
 import { Transactions } from './screens/Transactions';
 import type { Tx } from './lib/types';
@@ -65,7 +66,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
       <Routes>
         <Route path="/" element={<Placeholder title="This month" />} />
         <Route path="/tx" element={<Transactions />} />
-        <Route path="/balance" element={<Placeholder title="Balance" />} />
+        <Route path="/balance" element={<Balance />} />
         <Route path="/more" element={<More />} />
         <Route path="/plan" element={<Placeholder title="Plan" />} />
         <Route path="/recurring" element={<Placeholder title="Recurring" />} />

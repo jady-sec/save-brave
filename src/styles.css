@@ -164,3 +164,22 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .cats li span { flex: 1; }
 .inline-form { display: flex; gap: 8px; align-items: end; }
 .notice-inline.offline { margin: 12px max(16px, calc((100% - 640px) / 2)) 0; }
+
+/* Shared entries and balance (M5): purple is the shared note, blue is you, green is settled. */
+.segmented.scope button.shared[aria-checked='true'] { background: var(--shared); color: #fff; }
+.split { border: 1px solid color-mix(in srgb, var(--shared) 35%, var(--rule)); border-radius: var(--radius); padding: 12px; margin: 0; display: grid; gap: 10px; }
+.split legend { padding: 0 6px; font-weight: 600; color: var(--shared); }
+.split-preview { margin: 0; font-weight: 600; }
+.split-preview .you { color: var(--you); }
+.tag.shared { justify-self: start; font-size: 0.78rem; font-weight: 600; color: var(--shared); }
+.tx-share { display: block; text-align: right; font-size: 0.8rem; font-weight: 500; color: var(--ink-2); }
+.tx-amt.ok { color: var(--ok); }
+.balance-card { margin: 4px 0 16px; padding: 20px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--rule); text-align: center; }
+.balance-card.owed { border-color: color-mix(in srgb, var(--ok) 45%, var(--rule)); }
+.balance-card.owe { border-color: color-mix(in srgb, var(--shared) 45%, var(--rule)); }
+.balance-label { margin: 0; color: var(--ink-2); font-weight: 600; }
+.balance-big { margin: 4px 0 0; font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
+.balance-card.owed .balance-big { color: var(--ok); }
+.balance-card.owe .balance-big { color: var(--shared); }
+.settle { margin-bottom: 16px; }
+.section-title { font-size: 1rem; margin: 24px 0 8px; color: var(--ink-2); }

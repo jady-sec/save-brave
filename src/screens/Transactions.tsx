@@ -93,11 +93,15 @@ export function Transactions() {
                   <button type="button" onClick={() => openEntry(t)}>
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(t.category_id) ?? 'Category'}</span>
+                      {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : 'partner paid'}</span>}
                       {t.note && <span className="tx-note">{t.note}</span>}
                     </span>
                     <span className={`tx-amt num ${t.type}`}>
                       {t.type === 'income' ? '+' : '−'}{formatCents(t.amount_cents)}
                       <span className="sr-only">{t.type === 'income' ? ' income' : ' expense'}</span>
+                      {t.scope === 'shared' && (
+                        <span className="tx-share">your share {formatCents(t.splits.find((s) => s.user_id === me.userId)?.share_cents ?? 0)}</span>
+                      )}
                     </span>
                   </button>
                 </li>
