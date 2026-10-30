@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { SplitEditor } from '../components/SplitEditor';
 import { deleteTransaction, friendlyError, saveTransaction } from '../lib/api';
-import { formatCents, parseCents } from '../lib/money';
+import { centsToPlain, formatCents, parseCents } from '../lib/money';
 import { todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
 import type { Scope, Split, Tx, TxType } from '../lib/types';
@@ -10,7 +10,6 @@ import { partnerOf, useMe } from '../me';
 const lastCatKey = (type: TxType, scope: Scope) => `cache:lastCategory:${type}:${scope}`; // cache: prefix so sign-out clears it
 const recall = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const remember = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
-const centsToInput = (c: number) => `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
 const nameOf = (email: string) => email.split('@')[0];
 
 // Native modal <dialog>: traps focus and makes the page inert. Unmounting closes it;
@@ -23,7 +22,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
   const myId = me?.userId ?? '';
   const [type, setType] = useState<TxType>(editing?.type ?? 'expense');
   const [scope, setScope] = useState<Scope>(editing?.scope ?? 'personal');
-  const [amount, setAmount] = useState(editing ? centsToInput(editing.amount_cents) : '');
+  const [amount, setAmount] = useState(editing ? centsToPlain(editing.amount_cents) : '');
   const [categoryId, setCategoryId] = useState<string | null>(editing?.category_id ?? null);
   const [date, setDate] = useState(editing?.date ?? todayLocal());
   const [note, setNote] = useState(editing?.note ?? '');
@@ -34,7 +33,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     && computeSplit(editing.amount_cents, editing.paid_by, [myId, partner.user_id], { mode: 'equal' })
       .every((s) => editing.splits.some((x) => x.user_id === s.user_id && x.share_cents === s.share_cents));
   const [splitMode, setSplitMode] = useState<SplitMode>(editing?.scope === 'shared' && !storedIsEqual ? 'amounts' : 'equal');
-  const [mine, setMine] = useState(storedMine !== undefined && !storedIsEqual ? centsToInput(storedMine) : '');
+  const [mine, setMine] = useState(storedMine !== undefined && !storedIsEqual ? centsToPlain(storedMine) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

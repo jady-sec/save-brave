@@ -1,10 +1,14 @@
 // Every database call the UI makes. Errors surface as thrown Error with a user-facing message.
 import { isNetworkError } from './cache';
+import { fetchAll } from './paging';
 import { monthBounds } from './month';
 import { supabase } from './supabase';
 import { dueDates } from './recurring';
 import { computeSplit } from './split';
 import type { Category, Plan, RecurringRule, Scope, Settlement, Split, Tx, TxType } from './types';
+
+const TX = '*, splits:transaction_splits(user_id, share_cents)';
+const DESC = { ascending: false };
 
 export interface Member { user_id: string; email: string }
 export interface Me { userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[] }
@@ -96,9 +100,8 @@ export interface TxInput {
 
 export async function listTransactions(month: string): Promise<Tx[]> {
   const { start, endExclusive } = monthBounds(month);
-  const rows = must(await supabase.from('transactions').select('*, splits:transaction_splits(user_id, share_cents)')
-    .gte('date', start).lt('date', endExclusive).order('date', { ascending: false }).order('created_at', { ascending: false }));
-  return rows as Tx[];
+  return fetchAll<Tx>((a, b) => supabase.from('transactions').select(TX)
+    .gte('date', start).lt('date', endExclusive).order('date', DESC).order('created_at', DESC).order('id').range(a, b));
 }
 
 export async function saveTransaction(input: TxInput): Promise<string> {
@@ -111,13 +114,13 @@ export async function deleteTransaction(id: string): Promise<void> {
 
 /** Every shared entry, all time: the balance is derived from the full history. */
 export async function listShared(): Promise<Tx[]> {
-  const rows = must(await supabase.from('transactions').select('*, splits:transaction_splits(user_id, share_cents)')
-    .eq('scope', 'shared').order('date', { ascending: false }).order('created_at', { ascending: false }));
-  return rows as Tx[];
+  return fetchAll<Tx>((a, b) => supabase.from('transactions').select(TX)
+    .eq('scope', 'shared').order('date', DESC).order('created_at', DESC).order('id').range(a, b));
 }
 
 export async function listSettlements(): Promise<Settlement[]> {
-  return must(await supabase.from('settlements').select('*').order('date', { ascending: false }).order('created_at', { ascending: false })) as Settlement[];
+  return fetchAll<Settlement>((a, b) => supabase.from('settlements').select('*')
+    .order('date', DESC).order('created_at', DESC).order('id').range(a, b));
 }
 
 // RLS only accepts a settlement recorded by the person paying (from_user = caller).
@@ -191,4 +194,26 @@ export async function runRecurring(me: Me, today: string): Promise<number> {
   }
   if (failed) throw failed;
   return created;
+}
+
+/** Entries from the first day of fromMonth to the end of toMonth, oldest first. */
+export async function listTransactionsRange(fromMonth: string, toMonth: string): Promise<Tx[]> {
+  return fetchAll<Tx>((a, b) => supabase.from('transactions').select(TX)
+    .gte('date', monthBounds(fromMonth).start).lt('date', monthBounds(toMonth).endExclusive).order('date').order('created_at').order('id').range(a, b));
+}
+
+/** All of one owner's plans, oldest first; pick the latest at or before a month for carry-forward. */
+export async function listPlans(owner: PlanOwner): Promise<Plan[]> {
+  return must(await supabase.from('monthly_plans').select('*, limits:category_limits(category_id, limit_cents)')
+    .not(owner === 'me' ? 'user_id' : 'household_id', 'is', null).order('month')) as Plan[];
+}
+
+/** Every entry I can see (RLS: mine and the household's shared), optionally between two dates inclusive. */
+export async function listForExport(from: string, to: string): Promise<Tx[]> {
+  return fetchAll<Tx>((a, b) => {
+    let q = supabase.from('transactions').select(TX);
+    if (from) q = q.gte('date', from);
+    if (to) q = q.lte('date', to);
+    return q.order('date').order('created_at').order('id').range(a, b);
+  });
 }

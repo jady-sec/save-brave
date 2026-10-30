@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, listTransactions } from '../lib/api';
@@ -13,7 +13,11 @@ import { MonthSwitcher } from './Transactions';
 
 export function Overview() {
   const { me, categories, version } = useMe();
-  const [month, setMonth] = useState(monthKey(todayLocal()));
+  const [params, setParams] = useSearchParams(); // History links here with ?m=YYYY-MM
+  const asked = params.get('m');
+  const [month, setMonth] = useState(asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : monthKey(todayLocal()));
+  // Read once, then drop it: otherwise a refresh or relaunch jumps back to that month.
+  useEffect(() => { if (asked) setParams({}, { replace: true }); }, [asked, setParams]);
   const [data, setData] = useState<{ txs: Tx[]; mine: Plan | null; home: Plan | null } | null>(null);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState<string | null>(null);

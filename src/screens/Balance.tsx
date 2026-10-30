@@ -4,12 +4,11 @@ import { Screen } from '../components/Screen';
 import { addSettlement, deleteSettlement, friendlyError, listSettlements, listShared } from '../lib/api';
 import { computeBalance } from '../lib/balance';
 import { cached } from '../lib/cache';
-import { formatCents, parseCents } from '../lib/money';
+import { centsToPlain, formatCents, parseCents } from '../lib/money';
 import { todayLocal } from '../lib/month';
 import type { Settlement, Tx } from '../lib/types';
 import { partnerOf, useMe } from '../me';
 
-const centsToInput = (c: number) => `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
 const dayLabel = (d: string) => new Date(`${d}T12:00`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export function Balance() {
@@ -32,7 +31,7 @@ export function Balance() {
   }, [me, partner, version]);
 
   const balance = data && me ? computeBalance(me.userId, data.shared, data.settlements) : null;
-  useEffect(() => { if (balance !== null && balance < 0) setAmount(centsToInput(-balance)); }, [balance]);
+  useEffect(() => { if (balance !== null && balance < 0) setAmount(centsToPlain(-balance)); }, [balance]);
 
   const catName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const activity = useMemo(() => data ? [

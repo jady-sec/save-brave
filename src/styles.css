@@ -242,3 +242,12 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .rules li.paused .tx-main, .rules li.paused .tx-amt { opacity: 0.55; }
 .rule-actions { display: flex; gap: 8px; padding: 0 4px 12px; }
 .hint-tight { margin: -6px 0 0; font-size: 0.85rem; }
+/* History */
+.history { list-style: none; margin: 0; padding: 0; }
+.history a { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 12px 4px; min-height: 64px; border-bottom: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.h-month { font-weight: 600; }
+.h-saved { font-weight: 700; text-align: right; }
+.h-saved.met { color: var(--ok); }
+.h-saved.short { color: var(--warn); }
+.h-detail, .h-target { font-size: 0.85rem; }
+.h-target { text-align: right; }

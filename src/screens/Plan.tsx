@@ -2,13 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, savePlan, type PlanOwner } from '../lib/api';
 import { cached } from '../lib/cache';
-import { parseCentsOrZero } from '../lib/money';
+import { centsToPlain, parseCentsOrZero } from '../lib/money';
 import { monthKey, todayLocal } from '../lib/month';
 import type { Category, Plan as PlanRow } from '../lib/types';
 import { useMe } from '../me';
 import { MonthSwitcher, monthLabel } from './Transactions';
 
-const toInput = (c: number | undefined) => (c === undefined ? '' : `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`);
+const toInput = (c: number | undefined) => (c === undefined ? '' : centsToPlain(c));
 
 export function Plan() {
   const { me, categories, version, changed } = useMe();

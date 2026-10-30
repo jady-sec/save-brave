@@ -4,6 +4,7 @@ import { Screen } from './components/Screen';
 import { BottomNav } from './components/BottomNav';
 import { MeProvider, useMe } from './me';
 import { AddSheet } from './screens/AddSheet';
+import { History } from './screens/History';
 import { Household, pendingJoin, setPendingJoin } from './screens/Household';
 import { Login } from './screens/Login';
 import { Balance } from './screens/Balance';
@@ -87,7 +88,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
         <Route path="/more" element={<More />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/recurring" element={<Recurring />} />
-        <Route path="/history" element={<Placeholder title="History" />} />
+        <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/household" element={<Household />} />
         <Route path="*" element={<Placeholder title="Not found" />} />

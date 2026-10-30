@@ -19,3 +19,9 @@ export function formatCents(cents: number): string {
 export function parseCentsOrZero(input: string): number | null {
   return /^\s*0+(\.0{0,2})?\s*$/.test(input) ? 0 : parseCents(input);
 }
+
+/** "1234.56" for spreadsheets: integer math only, no float rounding. */
+export function centsToPlain(cents: number): string {
+  const a = Math.abs(cents);
+  return `${cents < 0 ? '-' : ''}${Math.floor(a / 100)}.${String(a % 100).padStart(2, '0')}`;
+}

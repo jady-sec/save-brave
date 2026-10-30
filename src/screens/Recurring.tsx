@@ -3,13 +3,12 @@ import { Screen } from '../components/Screen';
 import { SplitEditor } from '../components/SplitEditor';
 import { deleteRecurring, friendlyError, listRecurring, saveRecurring, setRecurringActive } from '../lib/api';
 import { cached } from '../lib/cache';
-import { formatCents, parseCents } from '../lib/money';
+import { centsToPlain, formatCents, parseCents } from '../lib/money';
 import { todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
 import type { RecurringRule, Scope, TxType } from '../lib/types';
 import { partnerOf, useMe } from '../me';
 
-const centsToInput = (c: number) => `${Math.floor(c / 100)}.${String(c % 100).padStart(2, '0')}`;
 const ordinal = (n: number) => `${n}${[11, 12, 13].includes(n) ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'}`;
 
 export function Recurring() {
@@ -86,7 +85,7 @@ function RuleForm({ rule, onDone, onCancel }: { rule?: RecurringRule; onDone: ()
   const myId = me!.userId;
   const [type, setType] = useState<TxType>(rule?.type ?? 'expense');
   const [scope, setScope] = useState<Scope>(rule?.scope ?? 'personal');
-  const [amount, setAmount] = useState(rule ? centsToInput(rule.amount_cents) : '');
+  const [amount, setAmount] = useState(rule ? centsToPlain(rule.amount_cents) : '');
   const [categoryId, setCategoryId] = useState<string | null>(rule?.category_id ?? null);
   const [day, setDay] = useState(String(rule?.day_of_month ?? Number(todayLocal().slice(8))));
   const [start, setStart] = useState(rule?.start_date ?? todayLocal());
@@ -94,7 +93,7 @@ function RuleForm({ rule, onDone, onCancel }: { rule?: RecurringRule; onDone: ()
   const [paidBy, setPaidBy] = useState(rule?.paid_by ?? myId);
   const stored = rule?.split;
   const [splitMode, setSplitMode] = useState<SplitMode>(stored?.mode ?? 'equal');
-  const [mine, setMine] = useState(stored?.mode === 'amounts' ? centsToInput(stored.cents[myId] ?? 0)
+  const [mine, setMine] = useState(stored?.mode === 'amounts' ? centsToPlain(stored.cents[myId] ?? 0)
     : stored?.mode === 'percent' ? String(stored.pct[myId] ?? '') : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
