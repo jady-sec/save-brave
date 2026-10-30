@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
+import { Screen } from './components/Screen';
 import { BottomNav } from './components/BottomNav';
 import { MeProvider, useMe } from './me';
 import { AddSheet } from './screens/AddSheet';
@@ -15,22 +16,20 @@ import { useSession } from './useSession';
 
 function Placeholder({ title }: { title: string }) {
   return (
-    <main className="screen">
-      <h1>{title}</h1>
+    <Screen title={title}>
       <p className="muted">Coming soon.</p>
-    </main>
+    </Screen>
   );
 }
 
 function More() {
   const items = [['/plan', 'Plan'], ['/recurring', 'Recurring'], ['/history', 'History'], ['/settings', 'Settings']];
   return (
-    <main className="screen">
-      <h1>More</h1>
+    <Screen title="More">
       <ul className="list">
         {items.map(([to, label]) => <li key={to}><Link to={to}>{label}</Link></li>)}
       </ul>
-    </main>
+    </Screen>
   );
 }
 
@@ -45,11 +44,12 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
 
   if (error && !me) {
     return (
-      <main className="screen stack">
-        <h1>Can't load your data</h1>
+      <Screen title="Can't load your data">
+        <div className="stack">
         <p className="error" role="alert">{error}</p>
         <button type="button" className="btn primary" onClick={refresh}>Try again</button>
-      </main>
+      </div>
+      </Screen>
     );
   }
   if (!me) return null;

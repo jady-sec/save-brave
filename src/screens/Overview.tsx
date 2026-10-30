@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, listTransactions } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
@@ -39,9 +40,17 @@ export function Overview() {
   const rows = r ? [...r.rows].sort((a, b) => Number(b.limit !== null) - Number(a.limit !== null) || name(a.category_id).localeCompare(name(b.category_id))) : [];
   const alerts = rows.filter((x) => x.level === 'warn' || x.level === 'over');
 
+  const pct = (x: { spent: number; limit: number | null }) => (x.limit ? Math.floor((x.spent * 100) / x.limit) : x.spent ? 100 : 0);
+  const status = r && data!.mine ? (r.actualSavings < r.plannedSavings ? 'short' : 'met') : '';
+
   return (
-    <main className="screen">
-      <MonthSwitcher month={month} onChange={setMonth} />
+    <Screen title={<MonthSwitcher month={month} onChange={setMonth} />} hero={r && (
+      <>
+        <p className="hero-label">Saved this month</p>
+        <p className={`hero-figure num ${status}`}>{formatCents(r.actualSavings)}</p>
+        {data!.mine && <p className="hero-sub num">Target {formatCents(r.plannedSavings)}</p>}
+      </>
+    )}>
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded numbers.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {!r ? (!error && <p className="muted">Loading…</p>) : (
@@ -52,7 +61,7 @@ export function Overview() {
                 <Alert key={x.category_id} level={x.level as 'warn' | 'over'}>
                   {x.level === 'over'
                     ? <><strong>{name(x.category_id)}</strong> over by {formatCents(-x.remaining!)}</>
-                    : <><strong>{Math.floor((x.spent * 100) / x.limit!)}%</strong> of {name(x.category_id)} used</>}
+                    : <><strong>{pct(x)}%</strong> of {name(x.category_id)} used</>}
                   {x.scope === 'shared' && <span className="muted"> (shared)</span>}
                 </Alert>
               ))}
@@ -62,37 +71,36 @@ export function Overview() {
           <section className="totals" aria-label="Month totals">
             <div><span>Income</span><strong className="num">{formatCents(r.income)}</strong></div>
             <div><span>Spent</span><strong className="num">{formatCents(r.spent)}</strong></div>
-            <div className={r.actualSavings < r.plannedSavings ? 'short' : 'met'}>
-              <span>Saved</span><strong className="num">{formatCents(r.actualSavings)}</strong>
-              {data!.mine && <small className="num">target {formatCents(r.plannedSavings)}</small>}
-            </div>
           </section>
           {!data!.mine && <p className="muted">No plan yet. <Link to="/plan">Set income, a savings target and limits</Link>.</p>}
 
-          <h2 className="section-title">By category</h2>
+          <h2 className="section-title">Your budget</h2>
           {rows.length === 0 ? <p className="empty muted">No spending this month yet.</p> : (
-            <ul className="budget-rows">
+            <ul className="budget-grid">
               {rows.map((x) => (
-                <li key={x.category_id} className={x.level ?? ''}>
-                  <div className="budget-head">
-                    <span className="tx-cat">{name(x.category_id)}{x.scope === 'shared' && <span className="tag shared"> Shared</span>}</span>
-                    <span className="num">{formatCents(x.spent)}{x.limit !== null && <span className="muted"> / {formatCents(x.limit)}</span>}</span>
-                  </div>
+                <li key={x.category_id} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
+                  <span className="chip-icon" aria-hidden="true">{name(x.category_id).slice(0, 1).toUpperCase()}</span>
+                  <span className="name">{name(x.category_id)}</span>
+                  <span className="amt num">
+                    <strong>{formatCents(x.spent)}</strong>{x.limit !== null && <> / {formatCents(x.limit)}</>}
+                  </span>
+                  {x.scope === 'shared' && <span className="tag shared">Shared · yours {formatCents(x.mine)}</span>}
+                  <span className="meta">
+                    {x.limit !== null
+                      ? <>{x.remaining! >= 0 ? `${formatCents(x.remaining!)} left` : `Over ${formatCents(-x.remaining!)}`}<span className="pct num">{pct(x)}%</span></>
+                      : <span>No limit</span>}
+                  </span>
                   {x.limit !== null && (
-                    <div className="bar" role="img" aria-label={`${Math.min(100, x.limit ? Math.floor((x.spent * 100) / x.limit) : (x.spent ? 100 : 0))}% of limit used`}>
-                      <span style={{ width: `${x.limit ? Math.min(100, (x.spent * 100) / x.limit) : (x.spent ? 100 : 0)}%` }} />
+                    <div className="bar" role="img" aria-label={`${pct(x)}% of limit used`}>
+                      <span style={{ width: `${Math.min(100, pct(x))}%` }} />
                     </div>
                   )}
-                  <div className="budget-foot muted">
-                    {x.remaining !== null && (x.remaining >= 0 ? `${formatCents(x.remaining)} left` : `Over by ${formatCents(-x.remaining)}`)}
-                    {x.scope === 'shared' && <span>{x.remaining !== null ? ' · ' : ''}your share {formatCents(x.mine)}</span>}
-                  </div>
                 </li>
               ))}
             </ul>
           )}
         </>
       )}
-    </main>
+    </Screen>
   );
 }

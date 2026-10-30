@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Screen } from '../components/Screen';
 import { createHousehold, createInvite, friendlyError, redeemInvite } from '../lib/api';
 import { partnerOf, useMe } from '../me';
 
@@ -44,8 +45,7 @@ export function Household({ onSkip }: { onSkip?: () => void }) {
 
   if (!me.householdId) {
     return (
-      <main className="screen">
-        <h1>Set up your household</h1>
+      <Screen title="Set up your household">
         <p className="muted">Shared costs and the balance need a household with your partner. Your personal entries stay private either way.</p>
         <form onSubmit={join} className="stack section">
           <h2>Join your partner</h2>
@@ -66,7 +66,7 @@ export function Household({ onSkip }: { onSkip?: () => void }) {
         </form>
         {error && <p className="error" role="alert">{error}</p>}
         {onSkip && <button type="button" className="btn ghost" onClick={onSkip}>Skip for now</button>}
-      </main>
+      </Screen>
     );
   }
 
@@ -80,8 +80,7 @@ export function Household({ onSkip }: { onSkip?: () => void }) {
   }
 
   return (
-    <main className="screen">
-      <h1>{me.householdName}</h1>
+    <Screen title={me.householdName ?? "Household"}>
       <ul className="list members">
         {me.members.map((m) => <li key={m.user_id}>{m.email}{m.user_id === me.userId && <span className="muted"> (you)</span>}</li>)}
       </ul>
@@ -105,7 +104,7 @@ export function Household({ onSkip }: { onSkip?: () => void }) {
         </section>
       )}
       {error && <p className="error" role="alert">{error}</p>}
-    </main>
+    </Screen>
   );
 }
 

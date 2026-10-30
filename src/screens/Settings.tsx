@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Screen } from '../components/Screen';
 import { deleteCategory, friendlyError, saveCategory } from '../lib/api';
 import { clearCache } from '../lib/cache';
 import { supabase } from '../lib/supabase';
@@ -73,8 +74,7 @@ export function Settings() {
   if (!me) return null;
   const partner = partnerOf(me);
   return (
-    <main className="screen">
-      <h1>Settings</h1>
+    <Screen title="Settings">
       <Categories />
       <section className="stack section">
         <h2>Household</h2>
@@ -90,6 +90,6 @@ export function Settings() {
         <p className="muted">Signed in as {me.email}</p>
         <button type="button" className="btn" onClick={() => { setPendingJoin(null); clearCache(); supabase.auth.signOut(); }}>Sign out</button>
       </section>
-    </main>
+    </Screen>
   );
 }

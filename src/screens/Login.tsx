@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Screen } from '../components/Screen';
 import { supabase } from '../lib/supabase';
 
 const installed = matchMedia('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone === true;
@@ -37,8 +38,7 @@ export function Login() {
   }
 
   return (
-    <main className="screen login">
-      <h1>Save Brave</h1>
+    <Screen title="Save Brave" hero={<p className="hero-sub">Budget and shared costs for two</p>}>
       {!sent ? (
         <form onSubmit={sendCode} className="stack">
           <p className="muted">Sign in with your email. No password needed.</p>
@@ -65,6 +65,6 @@ export function Login() {
         </form>
       )}
       {error && <p className="error" role="alert">{error}</p>}
-    </main>
+    </Screen>
   );
 }

@@ -2,14 +2,17 @@
 
 ## Direction contract
 
-THESIS: Your month on one note. Refuses the white-card banking dashboard; every screen answers "where do I stand" with one figure first.
+Replaces the earlier "Polymer banknote" direction (2026-10-29). The user pinned this reference:
+https://uxpilot.ai/mobile-design-templates/budget-planner-ui. The look below follows it.
 
-OWN-WORLD: Canadian polymer banknote. Cool pale polymer ground with a faint blue tint; ink is deep navy. Denomination colours carry meaning only: blue ($5) = you/personal, purple ($10) = shared, green ($50) = on plan, red-brown ($20/$100 blend) = over. The clear window is the Add sheet: a translucent panel over the page. Fine guilloche line pattern lives only inside progress fills. Tabular figures everywhere money appears. System UI sans; amounts set large and tight.
+THESIS: Your month on one figure. Every screen answers "where do I stand" with the headline number first.
 
-STORY: Open → the month's saved-vs-plan figure, then categories ranked by risk. "+" always one thumb away.
+OWN-WORLD: Monochrome iOS finance. Near-black header band (#111111) carrying the screen title and the headline figure in large white type. Below it, a white sheet with 32px rounded top corners and a small grab handle holds the content. Greys: #F3F4F6 fills, #E5E7EB rules, #1C1C1E ink. Inter type, tabular figures wherever money appears. Rounded 16px cards with a 1px grey border; round grey icon chips; black pill buttons; black is the active/selected colour.
 
-SIGNATURE: The window sheet: Add slides up as a clear polymer panel, amount focused, three taps to save.
+COLOUR: Monochrome by default. Colour appears only where it carries status: amber at 80% of a limit, red when over, green when a target is met, a quiet purple tag for shared items. Status always also has text.
 
-REACH: Balance mirrors You | Partner across a centre line. History draws every month on one fixed scale.
+STORY: Open → the month's saved figure in the header, then the budget cards in a two-column grid, alerts above them. "+" always one thumb away.
 
-RISK: Colours become decoration if they drift from meaning; status always also has text/icon.
+SIGNATURE: The header-to-sheet seam: dark band, white sheet rising over it with the grab handle. The Add sheet repeats it.
+
+RISK: The status colours drift into decoration; low-contrast grey text on white (the template's #8A8A8E fails 4.5:1, so body grey is darker).

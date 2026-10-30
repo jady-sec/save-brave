@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Screen } from '../components/Screen';
 import { Icon } from '../components/Icon';
 import { friendlyError, listTransactions } from '../lib/api';
 import { cached } from '../lib/cache';
@@ -51,8 +52,7 @@ export function Transactions() {
 
   if (!me) return null;
   return (
-    <main className="screen">
-      <MonthSwitcher month={month} onChange={setMonth} />
+    <Screen title={<MonthSwitcher month={month} onChange={setMonth} />}>
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded entries. Changes need a connection.</p>}
       <div className="filters">
         <label className="field"><span className="sr-only">Search notes</span>
@@ -110,6 +110,6 @@ export function Transactions() {
           </section>
         ))
       )}
-    </main>
+    </Screen>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Screen } from '../components/Screen';
 import { addSettlement, deleteSettlement, friendlyError, listSettlements, listShared } from '../lib/api';
 import { computeBalance } from '../lib/balance';
 import { cached } from '../lib/cache';
@@ -42,11 +43,10 @@ export function Balance() {
   if (!me) return null;
   if (!partner) {
     return (
-      <main className="screen">
-        <h1>Balance</h1>
+      <Screen title="Balance">
         <p className="muted">Shared costs and who owes whom show up here once your partner joins.</p>
         <Link className="btn primary" to="/household">Invite your partner</Link>
-      </main>
+      </Screen>
     );
   }
   const name = partner.email.split('@')[0];
@@ -70,21 +70,16 @@ export function Balance() {
   }
 
   return (
-    <main className="screen">
-      <h1>Balance</h1>
+    <Screen title="Balance" hero={balance !== null && (balance === 0
+      ? <p className="hero-figure">All settled</p>
+      : <>
+          <p className="hero-label">{balance > 0 ? `${name} owes you` : `You owe ${name}`}</p>
+          <p className="hero-figure num">{formatCents(Math.abs(balance))}</p>
+        </>)}>
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded balance. Settling up needs a connection.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {balance === null ? (!error && <p className="muted">Loading…</p>) : (
         <>
-          <section className={`balance-card ${balance > 0 ? 'owed' : balance < 0 ? 'owe' : 'even'}`} aria-live="polite">
-            {balance === 0 ? <p className="balance-big">All settled</p> : (
-              <>
-                <p className="balance-label">{balance > 0 ? `${name} owes you` : `You owe ${name}`}</p>
-                <p className="balance-big num">{formatCents(Math.abs(balance))}</p>
-              </>
-            )}
-          </section>
-
           {balance < 0 && (
             <form className="stack settle" onSubmit={settle}>
               <label className="field">
@@ -127,6 +122,6 @@ export function Balance() {
           )}
         </>
       )}
-    </main>
+    </Screen>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, savePlan, type PlanOwner } from '../lib/api';
 import { cached } from '../lib/cache';
 import { parseCentsOrZero } from '../lib/money';
@@ -33,8 +34,7 @@ export function Plan() {
   if (!me) return null;
   const cats = categories.filter((c) => c.type === 'expense' && c.scope === (owner === 'me' ? 'personal' : 'shared'));
   return (
-    <main className="screen">
-      <MonthSwitcher month={month} onChange={setMonth} />
+    <Screen title={<MonthSwitcher month={month} onChange={setMonth} />}>
       {me.householdId && (
         <div className="segmented wide" role="radiogroup" aria-label="Whose plan">
           {([['me', 'My plan'], ['household', 'Household']] as const).map(([o, label]) => (
@@ -49,7 +49,7 @@ export function Plan() {
         <PlanForm key={`${owner}:${month}:${plan?.id ?? 'new'}`} owner={owner} month={month} plan={plan} cats={cats}
           onSaved={() => { setSavedFor(`${owner}:${month}`); changed(); }} />
       )}
-    </main>
+    </Screen>
   );
 }
 
