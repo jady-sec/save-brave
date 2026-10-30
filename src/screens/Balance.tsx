@@ -85,7 +85,7 @@ export function Balance() {
                 <span>Amount you paid {name}</span>
                 <input className="num" inputMode="decimal" autoComplete="off" value={amount} onChange={(e) => setAmount(e.target.value)} />
               </label>
-              <button className="btn primary" disabled={busy}>{busy ? 'Recording…' : `Record ${cents ? formatCents(cents) : 'payment'} to ${name}`}</button>
+              <button className="btn primary" disabled={busy || stale}>{busy ? 'Recording…' : `Record ${cents ? formatCents(cents) : 'payment'} to ${name}`}</button>
             </form>
           )}
           {/* shortcut: only the person paying records a settle-up (enforced by RLS); relax if that gets annoying. */}

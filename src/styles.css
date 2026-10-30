@@ -36,6 +36,7 @@ body { margin: 0; min-height: 100dvh; background: var(--dark); }
 ::selection { background: color-mix(in srgb, var(--ink) 18%, transparent); color: var(--ink); }
 input, select, textarea, button { font: inherit; color: inherit; }
 input, select, textarea { font-size: 16px; caret-color: var(--ink); } /* 16px stops iOS zoom-on-focus */
+::placeholder { color: var(--ink-2); opacity: 1; }
 :focus-visible { outline: 2.5px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
 .hero :focus-visible { outline-color: var(--on-dark); }
 .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
@@ -141,13 +142,13 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .btn.ghost.close { width: auto; margin: 0; }
 .segmented { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; gap: 3px; border-radius: 12px; background: var(--fill); }
 .segmented button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 9px; background: none; font-weight: 600; color: var(--ink-2); cursor: pointer; }
-.segmented button[aria-checked='true'] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
+.segmented button[aria-pressed='true'] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.12); }
 .segmented button:disabled { cursor: not-allowed; }
 .amount { display: flex; align-items: baseline; gap: 6px; padding: 6px 0 10px; border-bottom: 2px solid var(--ink); }
 .amount:focus-within { border-color: var(--you); }
 .amount .currency { font-size: 2rem; font-weight: 600; color: var(--ink-2); }
 .amount input { flex: 1; min-width: 0; border: 0; background: none; font-size: 2.75rem; font-weight: 700; letter-spacing: -0.03em; padding: 0; outline: none; }
-.amount input::placeholder { color: color-mix(in srgb, var(--ink-2) 45%, transparent); }
+.amount input::placeholder { color: #8e8e93; opacity: 1; } /* large text: 3.3:1 */
 .hint { margin: -8px 0 0; font-size: 0.9rem; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; border: 0; margin: 0; padding: 0; }
 .chip { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid transparent; background: var(--fill); font-weight: 500; cursor: pointer; }
@@ -186,7 +187,7 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .notice-inline.offline { margin: 12px max(16px, calc((100% - 640px) / 2)) 0; }
 
 /* Shared entries and balance: purple tags shared items, green is settled. */
-.segmented.scope button.shared[aria-checked='true'] { background: var(--shared); color: #fff; }
+.segmented.scope button.shared[aria-pressed='true'] { background: var(--shared); color: #fff; }
 .split { border: 1px solid color-mix(in srgb, var(--shared) 35%, var(--rule)); border-radius: var(--radius); padding: 12px; margin: 0; display: grid; gap: 10px; }
 .split legend { padding: 0 6px; font-weight: 600; color: var(--shared); }
 .split-preview { margin: 0; font-weight: 600; }

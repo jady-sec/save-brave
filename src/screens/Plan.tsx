@@ -14,6 +14,7 @@ export function Plan() {
   const { me, categories, version, changed } = useMe();
   const [month, setMonth] = useState(monthKey(todayLocal()));
   const [owner, setOwner] = useState<PlanOwner>('me');
+  useEffect(() => { if (!me?.householdId) setOwner('me'); }, [me?.householdId]); // no household: only my plan exists
   const [plan, setPlan] = useState<PlanRow | null | undefined>(undefined);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +37,9 @@ export function Plan() {
   return (
     <Screen title={<MonthSwitcher month={month} onChange={setMonth} />}>
       {me.householdId && (
-        <div className="segmented wide" role="radiogroup" aria-label="Whose plan">
+        <div className="segmented wide" role="group" aria-label="Whose plan">
           {([['me', 'My plan'], ['household', 'Household']] as const).map(([o, label]) => (
-            <button key={o} type="button" role="radio" aria-checked={owner === o} onClick={() => setOwner(o)}>{label}</button>
+            <button key={o} type="button" aria-pressed={owner === o} onClick={() => setOwner(o)}>{label}</button>
           ))}
         </div>
       )}

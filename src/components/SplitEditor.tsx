@@ -8,9 +8,9 @@ export function SplitEditor({ mode, mine, onMode, onMine, myShare, partnerShare,
   return (
     <fieldset className="split">
       <legend>Split</legend>
-      <div className="segmented" role="radiogroup" aria-label="How to split">
+      <div className="segmented" role="group" aria-label="How to split">
         {([['equal', '50/50'], ['amounts', 'Amounts'], ['percent', 'Percent']] as const).map(([m, label]) => (
-          <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => onMode(m)}>{label}</button>
+          <button key={m} type="button" aria-pressed={mode === m} onClick={() => onMode(m)}>{label}</button>
         ))}
       </div>
       {mode !== 'equal' && (

@@ -73,7 +73,12 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
   return (
     <div className="app">
       {stale && <p className="notice-inline offline" role="status">Offline: showing what was last loaded. Adding and editing need a connection.</p>}
-      {recurringError && <p className="notice-inline offline" role="alert">Couldn't add recurring entries: {recurringError}</p>}
+      {recurringError && (
+        <div className="notice" role="alert">
+          <p>Couldn't add recurring entries: {recurringError}</p>
+          <button type="button" className="btn" onClick={() => setRecurringError(null)}>Dismiss</button>
+        </div>
+      )}
       {ignoredJoin && (
         <div className="notice" role="status">
           <p>You're signed in as {me.email}, who is already in a household, so this invite link can't be used here.

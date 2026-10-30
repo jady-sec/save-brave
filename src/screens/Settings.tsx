@@ -28,25 +28,25 @@ function Categories() {
     const next = prompt('Rename category', current)?.trim();
     if (next && next !== current) act(() => saveCategory(me, { id, name: next, type, scope }));
   };
-  const remove = (id: string, n: string) => { if (confirm(`Delete “${n}”?`)) act(() => deleteCategory(id)); };
+  const remove = (id: string, n: string) => { if (confirm(`Delete “${n}”? Any monthly limits set for it are removed too.`)) act(() => deleteCategory(id)); };
 
   return (
     <section className="stack section">
       <h2>Categories</h2>
       <div className="filter-row">
         {me.householdId && (
-          <div className="segmented" role="radiogroup" aria-label="Whose categories">
+          <div className="segmented" role="group" aria-label="Whose categories">
             {(['personal', 'shared'] as const).map((s) => (
-              <button key={s} type="button" role="radio" aria-checked={scope === s} onClick={() => { setScope(s); if (s === 'shared') setType('expense'); }}>
+              <button key={s} type="button" aria-pressed={scope === s} onClick={() => { setScope(s); if (s === 'shared') setType('expense'); }}>
                 {s === 'personal' ? 'Mine' : 'Shared'}
               </button>
             ))}
           </div>
         )}
         {scope === 'personal' && (
-          <div className="segmented" role="radiogroup" aria-label="Category type">
+          <div className="segmented" role="group" aria-label="Category type">
             {(['expense', 'income'] as const).map((t) => (
-              <button key={t} type="button" role="radio" aria-checked={type === t} onClick={() => setType(t)}>{t === 'expense' ? 'Expense' : 'Income'}</button>
+              <button key={t} type="button" aria-pressed={type === t} onClick={() => setType(t)}>{t === 'expense' ? 'Expense' : 'Income'}</button>
             ))}
           </div>
         )}

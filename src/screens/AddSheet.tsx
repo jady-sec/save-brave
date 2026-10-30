@@ -101,9 +101,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
           <button type="button" className="btn ghost close" onClick={onClose}>Cancel</button>
         </div>
 
-        <div className="segmented" role="radiogroup" aria-label="Entry type">
+        <div className="segmented" role="group" aria-label="Entry type">
           {(['expense', 'income'] as const).map((t) => (
-            <button key={t} type="button" role="radio" aria-checked={type === t} disabled={!!editing && shared}
+            <button key={t} type="button" aria-pressed={type === t} disabled={!!editing && shared}
               onClick={() => { setType(t); setCategoryId(null); if (t === 'income') setScope('personal'); }}>
               {t === 'expense' ? 'Expense' : 'Income'}
             </button>
@@ -111,9 +111,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
         </div>
 
         {canShare && (
-          <div className="segmented scope" role="radiogroup" aria-label="Personal or shared">
+          <div className="segmented scope" role="group" aria-label="Personal or shared">
             {(['personal', 'shared'] as const).map((s) => (
-              <button key={s} type="button" role="radio" aria-checked={scope === s} className={s}
+              <button key={s} type="button" aria-pressed={scope === s} className={s}
                 onClick={() => { setScope(s); setCategoryId(null); }}>
                 {s === 'personal' ? 'Just me' : 'Shared'}
               </button>
@@ -142,9 +142,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
 
         {shared && partner && (
           <>
-            <div className="segmented" role="radiogroup" aria-label="Paid by">
+            <div className="segmented" role="group" aria-label="Paid by">
               {[[myId, 'I paid'], [partner.user_id, `${nameOf(partner.email)} paid`]].map(([id, label]) => (
-                <button key={id} type="button" role="radio" aria-checked={paidBy === id} onClick={() => setPaidBy(id)}>{label}</button>
+                <button key={id} type="button" aria-pressed={paidBy === id} onClick={() => setPaidBy(id)}>{label}</button>
               ))}
             </div>
             <SplitEditor mode={splitMode} mine={mine} onMode={(m) => { setSplitMode(m); setMine(''); }} onMine={setMine}

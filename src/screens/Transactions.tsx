@@ -6,7 +6,7 @@ import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import type { Tx } from '../lib/types';
-import { useMe } from '../me';
+import { partnerOf, useMe } from '../me';
 
 export const monthLabel = (m: string) => new Date(`${m}-15T12:00`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
 const dayLabel = (d: string) => new Date(`${d}T12:00`).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -93,7 +93,7 @@ export function Transactions() {
                   <button type="button" onClick={() => openEntry(t)}>
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(t.category_id) ?? 'Category'}</span>
-                      {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : 'partner paid'}</span>}
+                      {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : `${partnerOf(me)?.email.split('@')[0] ?? 'partner'} paid`}</span>}
                       {t.note && <span className="tx-note">{t.note}</span>}
                     </span>
                     <span className={`tx-amt num ${t.type}`}>
