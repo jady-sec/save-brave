@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-10-30T03:07:39.851Z",
+        "reason": "User pinned the uxpilot Budget Planner template (Inter) and approved the redesign ('Looks good'); see docs/design/app-brief.md"
+      }
+    ]
+  }
+}

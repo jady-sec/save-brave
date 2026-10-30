@@ -9,8 +9,11 @@ import { Login } from './screens/Login';
 import { Balance } from './screens/Balance';
 import { Overview } from './screens/Overview';
 import { Plan } from './screens/Plan';
+import { Recurring } from './screens/Recurring';
 import { Settings } from './screens/Settings';
 import { Transactions } from './screens/Transactions';
+import { friendlyError, runRecurring } from './lib/api';
+import { todayLocal } from './lib/month';
 import type { Tx } from './lib/types';
 import { useSession } from './useSession';
 
@@ -34,9 +37,20 @@ function More() {
 }
 
 function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeSheet: () => void }) {
-  const { me, error, refresh, openEntry, stale } = useMe();
+  const { me, error, refresh, openEntry, stale, changed, version } = useMe();
   const [skipped, setSkipped] = useState(false);
   const [ignoredJoin, setIgnoredJoin] = useState(false);
+  const [recurringError, setRecurringError] = useState<string | null>(null);
+  const ready = !!me && !stale;
+  // Back-fill recurring entries on open, after any change (a new or resumed rule) and when the app returns to the
+  // foreground (an installed app may stay open for days). Both phones may run this at once; the database keeps
+  // one entry per rule and date, so re-running is cheap and safe.
+  useEffect(() => {
+    if (!ready || !me) return;
+    runRecurring(me, todayLocal())
+      .then((n) => { setRecurringError(null); if (n) changed(); })
+      .catch((e) => setRecurringError(friendlyError((e as Error).message)));
+  }, [ready, me?.userId, me?.members.length, version]); // not `me`: it changes on every refresh
   useEffect(() => {
     // Already in a household: an invite link opened here can't be used, so say why instead of dropping it silently.
     if (me?.householdId && pendingJoin()) { setPendingJoin(null); setIgnoredJoin(true); }
@@ -58,6 +72,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
   return (
     <div className="app">
       {stale && <p className="notice-inline offline" role="status">Offline: showing what was last loaded. Adding and editing need a connection.</p>}
+      {recurringError && <p className="notice-inline offline" role="alert">Couldn't add recurring entries: {recurringError}</p>}
       {ignoredJoin && (
         <div className="notice" role="status">
           <p>You're signed in as {me.email}, who is already in a household, so this invite link can't be used here.
@@ -71,7 +86,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
         <Route path="/balance" element={<Balance />} />
         <Route path="/more" element={<More />} />
         <Route path="/plan" element={<Plan />} />
-        <Route path="/recurring" element={<Placeholder title="Recurring" />} />
+        <Route path="/recurring" element={<Recurring />} />
         <Route path="/history" element={<Placeholder title="History" />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/household" element={<Household />} />

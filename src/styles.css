@@ -234,3 +234,11 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .budget-card.warn .bar span { background: var(--warn); }
 .budget-card.over .bar span { background: var(--over); }
 .balance-actions { display: grid; gap: 12px; margin-bottom: 8px; }
+/* Recurring items */
+.wide-btn { width: 100%; margin-bottom: 16px; }
+.rules li { border-bottom: 1px solid var(--rule); }
+.rules li button.btn { width: auto; min-height: 40px; border: 1px solid var(--rule); }
+.rules li > button { border-bottom: 0; }
+.rules li.paused .tx-main, .rules li.paused .tx-amt { opacity: 0.55; }
+.rule-actions { display: flex; gap: 8px; padding: 0 4px 12px; }
+.hint-tight { margin: -6px 0 0; font-size: 0.85rem; }

@@ -110,3 +110,22 @@ describe('split totals hold even for direct writes (no RPC)', () => {
     expect((await asUser(db, B, 'delete from transactions where id = $1', [id])).affectedRows).toBe(1);
   });
 });
+
+describe('recurring generation advances its rule in the same transaction', () => {
+  const last = async () => (await db.query<{ d: string | null }>(`select last_generated_date::text as d from recurring_rules where id = $1`, [rule])).rows[0].d;
+  test('saving a generated entry moves last_generated_date to its date', async () => {
+    await save(A, sharedTx({ recurring_rule_id: rule, date: '2026-10-01' }));
+    expect(await last()).toBe('2026-10-01');
+  });
+  test('a duplicate (already generated elsewhere) still advances it', async () => {
+    await save(A, sharedTx({ recurring_rule_id: rule, date: '2026-10-01' }));
+    await db.query(`update recurring_rules set last_generated_date = null where id = $1`, [rule]);
+    expect(await save(B, sharedTx({ recurring_rule_id: rule, date: '2026-10-01' }))).toBeNull();
+    expect(await last()).toBe('2026-10-01');
+  });
+  test('it never moves backwards', async () => {
+    await save(A, sharedTx({ recurring_rule_id: rule, date: '2026-10-01' }));
+    await save(B, sharedTx({ recurring_rule_id: rule, date: '2026-09-01' }));
+    expect(await last()).toBe('2026-10-01');
+  });
+});

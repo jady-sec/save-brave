@@ -2,7 +2,9 @@
 import { isNetworkError } from './cache';
 import { monthBounds } from './month';
 import { supabase } from './supabase';
-import type { Category, Plan, Scope, Settlement, Split, Tx, TxType } from './types';
+import { dueDates } from './recurring';
+import { computeSplit } from './split';
+import type { Category, Plan, RecurringRule, Scope, Settlement, Split, Tx, TxType } from './types';
 
 export interface Member { user_id: string; email: string }
 export interface Me { userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[] }
@@ -89,7 +91,7 @@ export async function deleteCategory(id: string): Promise<void> {
 
 export interface TxInput {
   id?: string; type: TxType; scope: Scope; amount_cents: number; date: string; category_id: string;
-  note?: string | null; paid_by?: string; splits?: Split[];
+  note?: string | null; paid_by?: string; splits?: Split[]; recurring_rule_id?: string;
 }
 
 export async function listTransactions(month: string): Promise<Tx[]> {
@@ -140,4 +142,53 @@ export async function getPlan(owner: PlanOwner, month: string): Promise<Plan | n
 /** Writes exactly this month's plan and replaces its limits in one transaction. */
 export async function savePlan(owner: PlanOwner, month: string, fields: PlanFields): Promise<void> {
   must(await supabase.rpc('save_plan', { p: { owner, month, ...fields } }));
+}
+
+export async function listRecurring(): Promise<RecurringRule[]> {
+  return must(await supabase.from('recurring_rules').select('*').order('created_at')) as RecurringRule[];
+}
+
+export type RecurringInput = Pick<RecurringRule, 'type' | 'scope' | 'paid_by' | 'amount_cents' | 'category_id' | 'note' | 'day_of_month' | 'start_date' | 'split'>;
+
+export async function saveRecurring(me: Me, input: RecurringInput, id?: string): Promise<void> {
+  const row = { ...input, household_id: input.scope === 'shared' ? me.householdId : null };
+  if (id) must(await supabase.from('recurring_rules').update(row).eq('id', id));
+  else must(await supabase.from('recurring_rules').insert(row));
+}
+
+export async function setRecurringActive(rule: RecurringRule, active: boolean, today: string): Promise<void> {
+  // Resuming skips the paused months instead of back-filling them.
+  const skipped = active ? dueDates(rule, today).at(-1) : undefined;
+  must(await supabase.from('recurring_rules').update({ active, ...(skipped ? { last_generated_date: skipped } : {}) }).eq('id', rule.id));
+}
+
+/** Generated entries stay; their link to the rule is cleared by the database. */
+export async function deleteRecurring(id: string): Promise<void> {
+  must(await supabase.from('recurring_rules').delete().eq('id', id));
+}
+
+/**
+ * Creates every missed entry for my active rules (mine and the household's), oldest first. Safe to run on both
+ * phones at once: save_transaction skips a rule+date that already exists and advances the rule either way. Returns how many entries were created.
+ */
+export async function runRecurring(me: Me, today: string): Promise<number> {
+  let created = 0;
+  let failed: Error | null = null;
+  const partner = me.members.find((m) => m.user_id !== me.userId);
+  for (const rule of (await listRecurring()).filter((r) => r.active)) {
+    try { // one broken rule must not stop the others
+      for (const date of dueDates(rule, today)) {
+        const shared = rule.scope === 'shared';
+        if (shared && !partner) break; // a shared split needs both members
+        const id = await saveTransaction({
+          type: rule.type, scope: rule.scope, amount_cents: rule.amount_cents, date, category_id: rule.category_id, note: rule.note,
+          recurring_rule_id: rule.id,
+          ...(shared ? { paid_by: rule.paid_by, splits: computeSplit(rule.amount_cents, rule.paid_by, [me.userId, partner!.user_id], rule.split ?? { mode: 'equal' }) } : {}),
+        });
+        if (id) created++; // save_transaction also advances the rule, in the same transaction (0009)
+      }
+    } catch (e) { failed ??= e as Error; }
+  }
+  if (failed) throw failed;
+  return created;
 }
