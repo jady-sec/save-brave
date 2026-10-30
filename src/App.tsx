@@ -6,6 +6,8 @@ import { AddSheet } from './screens/AddSheet';
 import { Household, pendingJoin, setPendingJoin } from './screens/Household';
 import { Login } from './screens/Login';
 import { Settings } from './screens/Settings';
+import { Transactions } from './screens/Transactions';
+import type { Tx } from './lib/types';
 import { useSession } from './useSession';
 
 function Placeholder({ title }: { title: string }) {
@@ -29,11 +31,9 @@ function More() {
   );
 }
 
-function Shell() {
-  const { me, error, refresh } = useMe();
-  const [adding, setAdding] = useState(false);
+function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeSheet: () => void }) {
+  const { me, error, refresh, openEntry, stale } = useMe();
   const [skipped, setSkipped] = useState(false);
-  const closeAdd = useCallback(() => setAdding(false), []);
   const [ignoredJoin, setIgnoredJoin] = useState(false);
   useEffect(() => {
     // Already in a household: an invite link opened here can't be used, so say why instead of dropping it silently.
@@ -54,6 +54,7 @@ function Shell() {
 
   return (
     <div className="app">
+      {stale && <p className="notice-inline offline" role="status">Offline: showing what was last loaded. Adding and editing need a connection.</p>}
       {ignoredJoin && (
         <div className="notice" role="status">
           <p>You're signed in as {me.email}, who is already in a household, so this invite link can't be used here.
@@ -63,7 +64,7 @@ function Shell() {
       )}
       <Routes>
         <Route path="/" element={<Placeholder title="This month" />} />
-        <Route path="/tx" element={<Placeholder title="Entries" />} />
+        <Route path="/tx" element={<Transactions />} />
         <Route path="/balance" element={<Placeholder title="Balance" />} />
         <Route path="/more" element={<More />} />
         <Route path="/plan" element={<Placeholder title="Plan" />} />
@@ -73,8 +74,8 @@ function Shell() {
         <Route path="/household" element={<Household />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Routes>
-      <BottomNav onAdd={() => setAdding(true)} />
-      {adding && <AddSheet onClose={closeAdd} />}
+      <BottomNav onAdd={() => openEntry()} />
+      {sheet && <AddSheet key={sheet.editing?.id ?? 'new'} editing={sheet.editing} onClose={closeSheet} />}
     </div>
   );
 }
@@ -83,5 +84,12 @@ export function App() {
   const session = useSession();
   if (session === undefined) return null;
   if (session === null) return <Login />;
-  return <MeProvider key={session.user.id} user={session.user}><Shell /></MeProvider>;
+  return <SignedIn key={session.user.id} user={session.user} />;
+}
+
+function SignedIn({ user }: { user: { id: string; email?: string } }) {
+  const [sheet, setSheet] = useState<{ editing?: Tx } | null>(null);
+  const openEntry = useCallback((editing?: Tx) => setSheet({ editing }), []);
+  const closeSheet = useCallback(() => setSheet(null), []);
+  return <MeProvider user={user} openEntry={openEntry}><Shell sheet={sheet} closeSheet={closeSheet} /></MeProvider>;
 }

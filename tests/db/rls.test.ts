@@ -40,9 +40,12 @@ beforeAll(async () => {
 
   // H1 shared data
   ids.cat1 = await ins('categories', { scope: 'shared', type: 'expense', name: 'Rent', household_id: H1 });
+  // shared entries and their splits go in one transaction (split totals are checked at commit)
+  await db.exec('begin');
   ids.tx1 = await ins('transactions', { type: 'expense', scope: 'shared', household_id: H1, paid_by: A, created_by: A, amount_cents: 200001, date: '2026-10-01', category_id: ids.cat1 });
   ids.tx1b = await ins('transactions', { type: 'expense', scope: 'shared', household_id: H1, paid_by: B, created_by: B, amount_cents: 300, date: '2026-10-03', category_id: ids.cat1 });
-  await db.query('insert into transaction_splits values ($1,$2,100001),($1,$3,100000)', [ids.tx1, A, B]);
+  await db.query('insert into transaction_splits values ($1,$2,100001),($1,$3,100000),($4,$2,150),($4,$3,150)', [ids.tx1, A, B, ids.tx1b]);
+  await db.exec('commit');
   ids.set1 = await ins('settlements', { household_id: H1, from_user: B, to_user: A, amount_cents: 5000, date: '2026-10-05', created_by: B });
   ids.plan1 = await ins('monthly_plans', { household_id: H1, month: '2026-10', expected_income_cents: 0, savings_target_cents: 0 });
   await db.query('insert into category_limits values ($1,$2,250000)', [ids.plan1, ids.cat1]);
@@ -51,8 +54,10 @@ beforeAll(async () => {
 
   // H2 shared data
   ids.cat2 = await ins('categories', { scope: 'shared', type: 'expense', name: 'Food', household_id: H2 });
+  await db.exec('begin');
   ids.tx2 = await ins('transactions', { type: 'expense', scope: 'shared', household_id: H2, paid_by: C, created_by: C, amount_cents: 700, date: '2026-10-01', category_id: ids.cat2 });
   await db.query('insert into transaction_splits values ($1,$2,700)', [ids.tx2, C]);
+  await db.exec('commit');
 });
 
 describe("partner cannot read the other's private data", () => {

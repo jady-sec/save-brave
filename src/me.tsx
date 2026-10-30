@@ -1,23 +1,51 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { friendlyError, getMe, type Me } from './lib/api';
+import { ensureDefaultCategories, friendlyError, getMe, listCategories, type Me } from './lib/api';
+import { cached } from './lib/cache';
+import type { Category, Tx } from './lib/types';
 
-interface MeState { me: Me | null; error: string | null; refresh: () => Promise<void> }
+interface MeState {
+  me: Me | null;
+  categories: Category[];
+  error: string | null;
+  /** true when showing last-loaded data because the server can't be reached */
+  stale: boolean;
+  refresh: () => Promise<void>;
+  /** bumps after any save so screens refetch */
+  version: number;
+  changed: () => void;
+  /** opens the Add sheet, or the edit sheet for an existing entry */
+  openEntry: (tx?: Tx) => void;
+}
 const Ctx = createContext<MeState | null>(null);
 
-export function MeProvider({ user, children }: { user: { id: string; email?: string }; children: ReactNode }) {
+export function MeProvider({ user, openEntry, children }: { user: { id: string; email?: string }; openEntry: (tx?: Tx) => void; children: ReactNode }) {
   const [me, setMe] = useState<Me | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
+  const [version, setVersion] = useState(0);
+  const changed = useCallback(() => setVersion((v) => v + 1), []);
+
   const refresh = useCallback(async () => {
-    try { setMe(await getMe(user)); setError(null); } catch (e) { setError(friendlyError((e as Error).message)); }
+    try {
+      const m = await cached(`${user.id}:me`, () => getMe(user));
+      let c = await cached(`${user.id}:categories`, listCategories);
+      if (!m.stale && !c.stale && (await ensureDefaultCategories(m.data, c.data))) c = await cached(`${user.id}:categories`, listCategories);
+      setMe(m.data); setCategories(c.data); setStale(m.stale || c.stale); setError(null);
+    } catch (e) {
+      setError(friendlyError((e as Error).message));
+    }
   }, [user]);
+
   useEffect(() => {
     refresh();
     // Picks up the partner joining (or any other device's change) when the app comes back to the foreground.
-    const onVisible = () => document.visibilityState === 'visible' && refresh();
+    const onVisible = () => { if (document.visibilityState === 'visible') { refresh(); changed(); } };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [refresh]);
-  return <Ctx.Provider value={{ me, error, refresh }}>{children}</Ctx.Provider>;
+  }, [refresh, changed]);
+
+  return <Ctx.Provider value={{ me, categories, error, stale, refresh, version, changed, openEntry }}>{children}</Ctx.Provider>;
 }
 
 export function useMe(): MeState {

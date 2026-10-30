@@ -4,6 +4,8 @@ const paths = {
   plus: 'M12 5v14M5 12h14',
   balance: 'M12 4v16M5 8h14M7 8l-3 7h6zM17 8l-3 7h6z',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
+  left: 'M15 5l-7 7 7 7',
+  right: 'M9 5l7 7-7 7',
 };
 
 export type IconName = keyof typeof paths;

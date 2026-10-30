@@ -34,3 +34,19 @@ describe('schema constraints', () => {
     await expect(db.query(`insert into categories (scope, type, name) values ('shared','expense','Rent')`)).rejects.toThrow();
   });
 });
+
+describe('category names', () => {
+  test('a person cannot have two categories with the same name and type', async () => {
+    await expect(db.query(`insert into categories (scope, type, name, owner_id) values ('personal','expense','Food',$1)`, [a])).rejects.toThrow(/duplicate|unique/);
+  });
+  test('the same name is fine for a different type or person', async () => {
+    const b = (await db.query<{ id: string }>(`insert into auth.users (email) values ('dup@test') returning id`)).rows[0].id;
+    await db.query(`insert into categories (scope, type, name, owner_id) values ('personal','income','Food',$1)`, [a]);
+    await db.query(`insert into categories (scope, type, name, owner_id) values ('personal','expense','Food',$1)`, [b]);
+  });
+  test('a household cannot have two shared categories with the same name', async () => {
+    const h = (await db.query<{ id: string }>(`insert into households (name, created_by) values ('H2',$1) returning id`, [a])).rows[0].id;
+    await db.query(`insert into categories (scope, type, name, household_id) values ('shared','expense','Rent',$1)`, [h]);
+    await expect(db.query(`insert into categories (scope, type, name, household_id) values ('shared','expense','Rent',$1)`, [h])).rejects.toThrow(/duplicate|unique/);
+  });
+});
