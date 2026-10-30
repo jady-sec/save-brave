@@ -38,7 +38,7 @@ export function Login() {
   }
 
   return (
-    <Screen title="Save Brave" hero={<p className="hero-sub">Budget and shared costs for two</p>}>
+    <Screen title="Save Brave" hero={<p className="hero-sub">Spend together. Save together.</p>}>
       {!sent ? (
         <form onSubmit={sendCode} className="stack">
           <p className="muted">Sign in with your email. No password needed.</p>

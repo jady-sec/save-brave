@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'Save Brave',
         short_name: 'Save Brave',
-        description: 'Budget and shared costs for two',
+        description: 'Spend together. Save together.',
         display: 'standalone',
         start_url: '/',
         background_color: '#111111',

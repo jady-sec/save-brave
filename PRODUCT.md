@@ -6,6 +6,12 @@
 
 web
 
+## Tagline
+
+Spend together. Save together.
+
+Use it wherever the app introduces itself: sign-in screen, web manifest, page description, sign-in emails.
+
 ## Stack
 React + TypeScript + Vite installable PWA; Supabase (Postgres, email OTP/magic-link auth, RLS). Free-tier static hosting.
 
