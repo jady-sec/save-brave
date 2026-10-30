@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Screen } from '../components/Screen';
+import { cleanInviteCode } from '../lib/invite';
 import { createHousehold, createInvite, friendlyError, redeemInvite } from '../lib/api';
 import { partnerOf, useMe } from '../me';
 
@@ -52,7 +53,7 @@ export function Household({ onSkip }: { onSkip?: () => void }) {
           <label className="field">
             <span>Invite code</span>
             <input className="num code" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={12} required
-              value={code} onChange={(e) => setCode(e.target.value.replace(/s/g, ''))} />
+              value={code} onChange={(e) => setCode(cleanInviteCode(e.target.value))} />
           </label>
           <button className="btn primary" disabled={busy || code.trim().length < 8}>Join household</button>
         </form>

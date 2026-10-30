@@ -2,7 +2,9 @@ const MAX_CENTS = 2147483647; // Postgres integer max
 
 /** Parses a typed dollar amount into positive integer cents, or null. No float math. */
 export function parseCents(input: string): number | null {
-  const s = input.replace(/[\s,]/g, '');
+  let s = input.replace(/\s/g, '');
+  if (/^\d+,\d{1,2}$/.test(s)) s = s.replace(',', '.'); // decimal comma: "12,50" (fr-CA keyboards)
+  else if (/^\d{1,3}(,\d{3})+(\.\d{0,2})?$/.test(s)) s = s.replace(/,/g, ''); // thousands: "1,234.56"
   const m = /^(\d+)(?:\.(\d{0,2}))?$/.exec(s);
   if (!m) return null;
   const cents = Number(m[1]) * 100 + Number((m[2] ?? '').padEnd(2, '0'));
