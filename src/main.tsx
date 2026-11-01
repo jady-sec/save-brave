@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { registerSW } from 'virtual:pwa-register';
 import { App } from './App';
 import { startIntro } from './intro';
+import { applyTheme, savedTheme } from './theme';
 import { setPendingJoin } from './screens/Household';
 import './styles.css';
 
@@ -12,6 +13,7 @@ import './styles.css';
 const join = new URLSearchParams(location.search).get('join');
 if (join) { setPendingJoin(join); history.replaceState(null, '', location.pathname + location.hash); }
 
+applyTheme(savedTheme()); // before the first paint, so dark mode doesn't flash light
 registerSW({ immediate: true });
 startIntro();
 

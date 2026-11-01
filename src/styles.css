@@ -28,7 +28,7 @@
   --nav-h: 84px;
   --tone-0: #2fd2b9; --tone-1: #ff7a6b; --tone-2: #b98cff; --tone-3: #ffd23f; --tone-4: #6fb8ff;
 
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: 'Lexend Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
   line-height: 1.45;
@@ -485,23 +485,34 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
 .avatar-grid label.on, .notice-inline, .alert { color: var(--on-color); }
 .repeat, .alert, .notice-inline { color: var(--ink); }
 
-/* Dark mode: same bold outlines and hard shadows, on near-black. Light outlines, black shadows. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #f3f3f5; --ink-2: #a9a9b2; --ground: #141416; --panel: #222226; --window: #1c1c20; --fill: #2a2a2f; --rule: #34343a;
-    --edge: #e9e9ee; --focus: #f3f3f5;
-    --pop: 3px 4px 0 #000; --pop-press: 1px 1px 0 #000;
-    --shared: #c4a6ff; --ok: #5fd796; --warn: #f2c14e; --over: #ff8f85;
-    --bg-warn: #3a3116; --bg-over: #40211f; --bg-shared: #2e2540; --bg-ok: #1b3528; --bg-done: #183330;
-  }
-  .hero { border-bottom-color: #000; }
-  .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23f3f3f5' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); }
-  .bar span { background: var(--ink); }
-  .sheet::backdrop { background: rgb(0 0 0 / 0.65); }
-  /* Bright surfaces keep dark outlines so they still read as stickers */
-  .hero .totals, .tiles li, .cat-badge, .avatar, .nav a[aria-current='page'], .nav .add, .btn.primary, .chip.on, .goals-link,
-  .segmented button[aria-pressed='true'], .story-bar span, .celebration-msg, .coin-fly { border-color: #000; }
+/* Dark mode: chosen with the moon button (src/theme.ts sets data-theme on <html>). Same bold outlines on
+   near-black: light outlines, black shadows. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #f3f3f5; --ink-2: #a9a9b2; --ground: #141416; --panel: #222226; --window: #1c1c20; --fill: #2a2a2f; --rule: #34343a;
+  --edge: #e9e9ee; --focus: #f3f3f5;
+  --pop: 3px 4px 0 #000; --pop-press: 1px 1px 0 #000;
+  --shared: #c4a6ff; --ok: #5fd796; --warn: #f2c14e; --over: #ff8f85;
+  --bg-warn: #3a3116; --bg-over: #40211f; --bg-shared: #2e2540; --bg-ok: #1b3528; --bg-done: #183330;
 }
+:root[data-theme='dark'] .hero { border-bottom-color: #000; }
+:root[data-theme='dark'] .field select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none' stroke='%23f3f3f5' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); }
+:root[data-theme='dark'] .bar span { background: var(--ink); }
+:root[data-theme='dark'] .sheet::backdrop { background: rgb(0 0 0 / 0.65); }
+/* Bright surfaces keep dark outlines so they still read as stickers */
+:root[data-theme='dark'] .hero .totals,
+:root[data-theme='dark'] .tiles li,
+:root[data-theme='dark'] .cat-badge,
+:root[data-theme='dark'] .avatar,
+:root[data-theme='dark'] .nav a[aria-current='page'],
+:root[data-theme='dark'] .nav .add,
+:root[data-theme='dark'] .btn.primary,
+:root[data-theme='dark'] .chip.on,
+:root[data-theme='dark'] .goals-link,
+:root[data-theme='dark'] .segmented button[aria-pressed='true'],
+:root[data-theme='dark'] .story-bar span,
+:root[data-theme='dark'] .celebration-msg,
+:root[data-theme='dark'] .coin-fly { border-color: #000; }
 .hero .totals, .hero .btn.icon, .hero a.btn.icon { color: var(--ink); }
 
 /* Month: bills coming up */
@@ -512,6 +523,5 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
 .up-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .up-main .muted { font-size: 0.85rem; }
 .up-amt { font-weight: 700; }
-@media (prefers-color-scheme: dark) {
-  .segmented.scope button.shared[aria-pressed='true'] { color: var(--on-color); } /* light lavender in dark mode */
-}
+:root[data-theme='dark'] .segmented.scope button.shared[aria-pressed='true'] { color: var(--on-color); } /* light lavender in dark mode */
+.hero-actions { display: flex; gap: 10px; }

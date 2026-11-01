@@ -15,11 +15,13 @@ import { displayName } from '../lib/profile';
 import type { Plan, RecurringRule, Tx } from '../lib/types';
 import { upcomingBills } from '../lib/upcoming';
 import { useMe } from '../me';
+import { useTheme } from '../theme';
 import { useFollowToday } from '../useFollowToday';
 import { MonthSwitcher } from './Transactions';
 
 export function Overview() {
   const { me, categories, version } = useMe();
+  const [theme, setTheme] = useTheme();
   const [params, setParams] = useSearchParams(); // History links here with ?m=YYYY-MM
   const asked = params.get('m');
   const [month, setMonth] = useState(asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : monthKey(todayLocal()));
@@ -81,7 +83,13 @@ export function Overview() {
           <Avatar who={{ email: me.email, ...me.profile }} />
           <span><small>Hello</small><strong>{displayName({ email: me.email, display_name: me.profile?.display_name })}</strong></span>
         </Link>
-        <Link to="/insights" className="btn icon" aria-label="Insights: trends and where your money goes"><Icon name="chart" /></Link>
+        <span className="hero-actions">
+          <button type="button" className="btn icon" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+          </button>
+          <Link to="/insights" className="btn icon" aria-label="Insights: trends and where your money goes"><Icon name="chart" /></Link>
+        </span>
       </div>
       <MonthSwitcher month={month} onChange={setMonth} />
     </>} hero={r && (

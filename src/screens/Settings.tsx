@@ -14,6 +14,7 @@ import { todayLocal } from '../lib/month';
 import { supabase } from '../lib/supabase';
 import type { Scope, TxType } from '../lib/types';
 import { partnerOf, useMe } from '../me';
+import { useTheme } from '../theme';
 import { setPendingJoin } from './Household';
 
 /** Name and avatar, shown to you and your partner (Month greeting, Balance, shared entries). */
@@ -294,6 +295,20 @@ function Backup() {
   );
 }
 
+function Appearance() {
+  const [theme, setTheme] = useTheme();
+  return (
+    <section className="stack section">
+      <h2>Appearance</h2>
+      <div className="segmented wide" role="group" aria-label="Theme">
+        {(['light', 'dark'] as const).map((t) => (
+          <button key={t} type="button" aria-pressed={theme === t} onClick={() => setTheme(t)}>{t === 'light' ? 'Light' : 'Dark'}</button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function Settings() {
   const { me } = useMe();
   if (!me) return null;
@@ -302,6 +317,7 @@ export function Settings() {
     <Screen title="Settings">
       <ProfileEditor />
       <Notifications />
+      <Appearance />
       <Categories />
       <section className="stack section">
         <h2>Household</h2>
