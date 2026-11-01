@@ -98,6 +98,11 @@ export async function saveCategory(me: Me, c: { id?: string; name: string; type:
   must(await supabase.from('categories').insert({ name, type: c.type, scope: c.scope, ...owner }));
 }
 
+/** null goes back to the icon guessed from the name. */
+export async function setCategoryIcon(id: string, icon: string | null): Promise<void> {
+  must(await supabase.from('categories').update({ icon }).eq('id', id));
+}
+
 export async function deleteCategory(id: string): Promise<void> {
   must(await supabase.from('categories').delete().eq('id', id));
 }

@@ -2,7 +2,7 @@
 export type Scope = 'personal' | 'shared';
 export type TxType = 'income' | 'expense';
 
-export interface Category { id: string; scope: Scope; type: TxType; name: string; owner_id: string | null; household_id: string | null }
+export interface Category { id: string; scope: Scope; type: TxType; name: string; owner_id: string | null; household_id: string | null; icon?: string | null }
 export interface Split { user_id: string; share_cents: number }
 export interface Tx {
   id: string; type: TxType; scope: Scope; household_id: string | null; paid_by: string; created_by: string;

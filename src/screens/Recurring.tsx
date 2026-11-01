@@ -54,7 +54,7 @@ export function Recurring() {
               {rules.map((r) => (
                 <li key={r.id} className={r.active ? '' : 'paused'}>
                   <button type="button" onClick={() => setEditing(r)}>
-                    <CatBadge name={catName.get(r.category_id) ?? 'Category'} />
+                    <CatBadge id={r.category_id} />
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(r.category_id) ?? 'Category'}{r.note ? ` · ${r.note}` : ''}</span>
                       <span className="tx-note">

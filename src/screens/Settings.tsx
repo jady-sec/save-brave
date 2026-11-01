@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
+import { CatBadge, CategoryGlyph } from '../components/CatBadge';
 import { Screen } from '../components/Screen';
-import { deleteCategory, friendlyError, fullBackup, listForExport, saveCategory, saveProfile } from '../lib/api';
+import { deleteCategory, friendlyError, fullBackup, listForExport, saveCategory, saveProfile, setCategoryIcon } from '../lib/api';
 import { AVATARS, TONES, cleanName, displayName, type AvatarKey } from '../lib/profile';
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push';
 import { clearCache } from '../lib/cache';
+import { CATEGORY_ICONS, iconFor, type CategoryIcon } from '../lib/categoryIcons';
 import { toCsv } from '../lib/csv';
 import { exportRows } from '../lib/export';
 import { todayLocal } from '../lib/month';
@@ -87,6 +89,7 @@ function Categories() {
   const [type, setType] = useState<TxType>('expense');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [picking, setPicking] = useState<string | null>(null);
   if (!me) return null;
   const list = categories.filter((c) => c.scope === scope && c.type === type);
 
@@ -125,9 +128,24 @@ function Categories() {
       <ul className="list cats">
         {list.map((c) => (
           <li key={c.id}>
+            <button type="button" className="icon-pick" onClick={() => setPicking(picking === c.id ? null : c.id)}
+              aria-expanded={picking === c.id} aria-label={`Change icon for ${c.name}`}>
+              <CatBadge id={c.id} size={40} />
+            </button>
             <span>{c.name}</span>
             <button type="button" className="btn small" onClick={() => rename(c.id, c.name)} aria-label={`Rename ${c.name}`}>Rename</button>
             <button type="button" className="btn small" onClick={() => remove(c.id, c.name)} aria-label={`Delete ${c.name}`}>Delete</button>
+            {picking === c.id && (
+              <div className="icon-grid" role="group" aria-label={`Icon for ${c.name}`}>
+                {(Object.keys(CATEGORY_ICONS) as CategoryIcon[]).map((k) => (
+                  <button key={k} type="button" aria-pressed={iconFor(c) === k} aria-label={k}
+                    onClick={() => { setPicking(null); act(() => setCategoryIcon(c.id, k)); }}>
+                    <CategoryGlyph icon={k} />
+                  </button>
+                ))}
+                <button type="button" className="auto" onClick={() => { setPicking(null); act(() => setCategoryIcon(c.id, null)); }}>Auto</button>
+              </div>
+            )}
           </li>
         ))}
       </ul>

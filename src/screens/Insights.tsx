@@ -76,7 +76,7 @@ export function Insights() {
             <ul className="shares">
               {shares.map((s) => (
                 <li key={s.category_id}>
-                  <CatBadge name={names.get(s.category_id) ?? 'Category'} />
+                  <CatBadge id={s.category_id} />
                   <span className="share-main">
                     <span className="share-top"><strong>{names.get(s.category_id) ?? 'Category'}</strong><span className="num">{formatCents(s.cents)}</span></span>
                     <span className="bar" role="img" aria-label={`${s.pct}% of your spending`}><span style={{ width: `${s.pct}%` }} /></span>

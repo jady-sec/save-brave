@@ -116,7 +116,7 @@ export function Overview() {
             <ul className="budget-grid">
               {rows.map((x) => (
                 <li key={x.category_id} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
-                  <CatBadge name={name(x.category_id)} />
+                  <CatBadge id={x.category_id} />
                   <span className="name">{name(x.category_id)}</span>
                   <span className="amt num">
                     <strong>{formatCents(x.spent)}</strong>{x.limit !== null && <> / {formatCents(x.limit)}</>}

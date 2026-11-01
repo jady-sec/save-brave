@@ -114,7 +114,7 @@ export function Transactions() {
               {list.map((t) => (
                 <li key={t.id}>
                   <button type="button" onClick={() => openEntry(t)}>
-                    <CatBadge name={catName.get(t.category_id) ?? 'Category'} />
+                    <CatBadge id={t.category_id} />
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(t.category_id) ?? 'Category'}</span>
                       {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : `${(partnerOf(me) ? displayName(partnerOf(me)!) : 'partner')} paid`}</span>}

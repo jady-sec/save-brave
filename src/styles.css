@@ -467,3 +467,12 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
 .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .tiles li { min-height: 92px; }
 .tiles .t3 { background: linear-gradient(160deg, #fff0a8, var(--tone-3)); }
+
+/* Category icons */
+.cat-badge svg { display: block; }
+.cats li { flex-wrap: wrap; padding: 8px 4px; }
+.icon-pick { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 12px; }
+.icon-grid { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 8px; padding: 8px 0 4px; }
+.icon-grid button { display: grid; place-items: center; height: 48px; border: var(--line); border-radius: 12px; background: var(--panel); color: var(--ink); cursor: pointer; }
+.icon-grid button[aria-pressed='true'] { background: var(--orange); color: #111; box-shadow: 2px 3px 0 var(--ink); }
+.icon-grid .auto { font-weight: 600; font-size: 0.85rem; }
