@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { celebrate } from '../components/Celebration';
 import { Jar } from '../components/Splash';
 import { friendlyError, listContributions, listPlans, listTransactionsRange } from '../lib/api';
@@ -23,23 +23,31 @@ export function RecapScreen() {
   const [recap, setRecap] = useState<Recap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [i, setI] = useState(0);
-  const cheered = useRef(false);
 
   useEffect(() => {
     if (!me) return;
+    let live = true;
     try { localStorage.setItem(recapSeenKey(me.userId, month), '1'); } catch { /* private mode */ }
     Promise.all([
       cached(`${me.userId}:recap:${month}`, () => listTransactionsRange(addMonths(month, -3), month)),
       cached(`${me.userId}:plans:me`, () => listPlans('me')),
       cached(`${me.userId}:goal-contributions`, listContributions),
     ]).then(([t, p, c]) => {
+      if (!live) return;
       const r = monthRecap(me.userId, t.data, p.data, c.data, month);
       setRecap(r);
-      if (r.target !== null && r.target > 0 && r.saved >= r.target && !cheered.current) { cheered.current = true; celebrate('Savings target hit!'); }
-    }).catch((e) => setError(friendlyError(e.message)));
+      // Cheer once per month, not every time the recap is reopened from Insights.
+      const key = `saveBrave:cheered:${me.userId}:${month}`;
+      let cheered = false;
+      try { cheered = !!localStorage.getItem(key); localStorage.setItem(key, '1'); } catch { /* private mode */ }
+      if (r.target !== null && r.target > 0 && r.saved >= r.target && !cheered) celebrate('Savings target hit!');
+    }).catch((e) => { if (live) setError(friendlyError(e.message)); });
+    return () => { live = false; };
   }, [me?.userId, month]); // eslint-disable-line react-hooks/exhaustive-deps -- not `me`: it changes on every refresh
 
-  const close = () => navigate('/', { replace: true });
+  // Back to wherever it was opened from (Insights), or to Month when it opened by itself.
+  const location = useLocation();
+  const close = () => (location.key !== 'default' ? navigate(-1) : navigate('/', { replace: true }));
   const name = (id: string) => categories.find((c) => c.id === id)?.name ?? 'One category';
   const label = monthLabel(month).split(' ')[0];
 

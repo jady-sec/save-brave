@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Screen } from './components/Screen';
 import { Splash } from './components/Splash';
@@ -60,19 +60,23 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
   }, [ready, me?.userId, me?.members.length, version]); // not `me`: it changes on every refresh
   // Long-press "Add expense" on the app icon (manifest shortcuts) opens the app at /?add=1.
   const [params, setParams] = useSearchParams();
+  const fromShortcut = useRef(params.get('add') === '1');
   useEffect(() => {
     if (me && params.get('add') === '1') { setParams({}, { replace: true }); openEntry(); }
   }, [me, params, setParams, openEntry]);
   // In the first week of a month, the first visit shows last month's recap (once), if there was anything in it.
   const location = useLocation();
   const navigate = useNavigate();
+  const path = useRef(location.pathname);
+  path.current = location.pathname;
   useEffect(() => {
-    if (!ready || !me || location.pathname !== '/' || Number(todayLocal().slice(8, 10)) > 7) return;
+    if (!ready || !me || fromShortcut.current || location.pathname !== '/' || Number(todayLocal().slice(8, 10)) > 7) return;
     const m = lastMonth();
     try { if (localStorage.getItem(recapSeenKey(me.userId, m))) return; } catch { return; }
     let live = true;
     cached(`${me.userId}:tx:${m}`, () => listTransactions(m))
-      .then((r) => { if (live && r.data.some((t) => t.created_by === me.userId)) navigate(`/recap?m=${m}`); })
+      // Only if they're still on the Month screen: don't pull them out of whatever they tapped meanwhile.
+      .then((r) => { if (live && path.current === '/' && r.data.some((t) => t.created_by === me.userId)) navigate(`/recap?m=${m}`); })
       .catch(() => { /* the recap is a nicety; skip it this time */ });
     return () => { live = false; };
   }, [ready, me?.userId]); // eslint-disable-line react-hooks/exhaustive-deps -- once per app open
