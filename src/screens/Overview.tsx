@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
 import { Avatar } from '../components/Avatar';
 import { CatBadge } from '../components/CatBadge';
+import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, listTransactions } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
@@ -54,10 +55,13 @@ export function Overview() {
 
   return (
     <Screen title={<>
-      <Link to="/settings" className="greeting">
-        <Avatar who={{ email: me.email, ...me.profile }} />
-        <span><small>Hello</small><strong>{displayName({ email: me.email, display_name: me.profile?.display_name })}</strong></span>
-      </Link>
+      <div className="greet-row">
+        <Link to="/settings" className="greeting">
+          <Avatar who={{ email: me.email, ...me.profile }} />
+          <span><small>Hello</small><strong>{displayName({ email: me.email, display_name: me.profile?.display_name })}</strong></span>
+        </Link>
+        <Link to="/insights" className="btn icon" aria-label="Insights: trends and where your money goes"><Icon name="chart" /></Link>
+      </div>
       <MonthSwitcher month={month} onChange={setMonth} />
     </>} hero={r && (
       <>

@@ -36,7 +36,8 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-height: 100dvh; background: var(--ground); overscroll-behavior-y: none; } /* our pull-to-refresh replaces the browser's */
+html, body { overscroll-behavior-y: none; }
+body { margin: 0; min-height: 100dvh; background: var(--ground); } /* our pull-to-refresh replaces the browser's */
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 ::selection { background: var(--orange-soft); color: var(--ink); }
 input, select, textarea, button { font: inherit; color: inherit; }
@@ -389,3 +390,31 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .trend-head { flex-wrap: wrap; }
 .trend-head strong { flex: 1 1 100%; }
 .trend-pill { order: 1; }
+
+/* Month screen: greeting with the Insights button beside it */
+.greet-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.greet-row .greeting { margin-bottom: 0; }
+.hero a.btn.icon { background: var(--panel); }
+
+/* Insights */
+.shares { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.shares li { display: flex; align-items: center; gap: 12px; }
+.share-main { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.share-top { display: flex; justify-content: space-between; gap: 8px; }
+.share-top strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.share-pct { width: 3.2em; text-align: right; font-weight: 700; }
+.shares .bar span { background: var(--orange); }
+.saved-bars { list-style: none; margin: 0; padding: 14px; display: grid; gap: 10px; border: var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--pop); }
+.saved-bars li { display: grid; grid-template-columns: 2.6em 1fr auto; align-items: center; gap: 10px; }
+.sb-month { font-weight: 600; font-size: 0.9rem; }
+.sb-track { height: 14px; }
+.sb-track span { display: block; height: 100%; min-width: 3px; border: 1.5px solid var(--ink); border-radius: 4px; background: var(--tone-0); }
+.sb-track span.neg { background: var(--tone-1); }
+.sb-value { font-weight: 700; font-size: 0.9rem; }
+.sb-value.neg { color: var(--over); }
+.goals-link {
+  display: flex; align-items: center; justify-content: space-between; margin-top: 24px; padding: 14px 18px; color: var(--ink); text-decoration: none;
+  border: var(--line); border-radius: var(--radius); background: linear-gradient(160deg, #a8f0e3, var(--tone-0)); box-shadow: var(--pop); font-size: 1.4rem;
+}
+.goals-link > span:first-child { display: grid; font-size: 1rem; }
+.goals-link .num { font-size: 1.3rem; font-weight: 700; }

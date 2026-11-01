@@ -1,14 +1,19 @@
-// Opening animation (#intro in index.html): plays on launch, and again when the app comes back after a long
-// break (an installed app is often resumed rather than relaunched). Tap to skip. The app loads underneath.
+// Opening animation (#intro in index.html): plays once when the app starts. A reload in the same session
+// (pull-to-refresh, an app update applying itself) skips it; sessionStorage is cleared when the app is closed.
+// Tap to skip.
 const LENGTH = 1850; // ms, matches the keyframe timings in styles.css
-const REPLAY_AFTER = 10 * 60_000;
+const PLAYED = 'introPlayed';
 
 export function startIntro() {
   const intro = document.getElementById('intro');
   if (!intro) return;
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let timer = 0;
+  let played = false;
+  try { played = sessionStorage.getItem(PLAYED) === '1'; sessionStorage.setItem(PLAYED, '1'); } catch { /* private mode: just play */ }
+  if (played) { intro.hidden = true; return; }
 
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  intro.classList.add('play');
+  let timer = 0;
   const finish = () => {
     clearTimeout(timer);
     if (intro.hidden || intro.classList.contains('leaving')) return;
@@ -16,20 +21,6 @@ export function startIntro() {
     // animationend doesn't fire with Reduce Motion (animations are off), so hide on a timer instead.
     timer = window.setTimeout(() => { intro.hidden = true; intro.classList.remove('leaving'); }, still ? 0 : 340);
   };
-  const play = () => {
-    clearTimeout(timer);
-    intro.hidden = false;
-    intro.classList.remove('play', 'leaving');
-    void intro.offsetWidth; // restart the CSS animations
-    intro.classList.add('play');
-    timer = window.setTimeout(finish, still ? 500 : LENGTH);
-  };
-
   intro.addEventListener('click', finish);
-  let hiddenAt = 0;
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') hiddenAt = Date.now();
-    else if (hiddenAt && Date.now() - hiddenAt > REPLAY_AFTER) play();
-  });
-  play();
+  timer = window.setTimeout(finish, still ? 500 : LENGTH);
 }

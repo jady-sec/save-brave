@@ -7,6 +7,7 @@ const paths = {
   left: 'M15 5l-7 7 7 7',
   right: 'M9 5l7 7-7 7',
   refresh: 'M20 12a8 8 0 1 1-2.34-5.66L20 8.7M20 4v4.7h-4.7',
+  chart: 'M5 20V11M12 20V5M19 20v-7',
 };
 
 export type IconName = keyof typeof paths;
