@@ -12,6 +12,7 @@ import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { spendingTrends } from '../lib/trends';
 import type { Plan, Tx } from '../lib/types';
 import { useMe } from '../me';
+import { lastMonth } from './Recap';
 import { monthLabel } from './Transactions';
 
 const MONTHS = 6;
@@ -109,6 +110,7 @@ export function Insights() {
             <span><strong>Saved toward goals</strong><span className="num">{formatCents(data.goalsSaved)}</span></span>
             <span aria-hidden="true">›</span>
           </Link>
+          <Link to={`/recap?m=${lastMonth()}`} className="btn wide-btn recap-link">See {monthLabel(lastMonth())} in review</Link>
         </>
       )}
     </Screen>

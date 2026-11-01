@@ -419,3 +419,27 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .goals-link > span:first-child { display: grid; font-size: 1rem; }
 .goals-link .num { font-size: 1.3rem; font-weight: 700; }
 html.sheet-open, html.sheet-open body { overflow: hidden; }
+
+/* Monthly recap story */
+.story {
+  position: fixed; inset: 0; z-index: 55; display: grid; place-items: center; padding: calc(56px + env(safe-area-inset-top)) 28px 40px;
+  color: #111; background: var(--orange); transition: background-color 300ms ease;
+}
+.story.c-teal { background: var(--tone-0); } .story.c-purple { background: var(--tone-2); }
+.story.c-yellow { background: var(--tone-3); } .story.c-blue { background: var(--tone-4); }
+.story-bar { position: absolute; top: calc(14px + env(safe-area-inset-top)); left: 16px; right: 16px; display: flex; gap: 6px; }
+.story-bar span { flex: 1; height: 6px; border: 1.5px solid #111; border-radius: 3px; background: rgb(255 255 255 / 0.5); }
+.story-bar span.on { background: #111; }
+.story-close { position: absolute; top: calc(30px + env(safe-area-inset-top)); right: 14px; z-index: 2; color: #111; background: #fff; }
+.story-card { position: relative; z-index: 2; display: grid; justify-items: center; gap: 12px; text-align: center; max-width: 420px; animation: story-in 380ms cubic-bezier(0.16, 1, 0.3, 1); }
+.story-card svg { width: 120px; height: 120px; }
+.story-card .btn { position: relative; z-index: 3; margin-top: 12px; padding: 0 32px; }
+.story-kicker { margin: 0; font-weight: 600; font-size: 1.05rem; }
+.story-big { margin: 0; font-size: clamp(2rem, 9vw, 2.8rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; }
+.story-sub { margin: 0; font-size: 1.05rem; font-weight: 500; }
+.story-tap { position: absolute; top: 0; bottom: 0; z-index: 1; width: 50%; border: 0; background: none; cursor: pointer; }
+.story-tap.left { left: 0; } .story-tap.right { right: 0; }
+@keyframes story-in { from { opacity: 0; transform: translateY(16px) scale(0.97); } }
+.recap-link { margin-top: 14px; }
+.story-card { pointer-events: none; } /* taps anywhere go to the left/right halves */
+.story-card .btn { pointer-events: auto; }

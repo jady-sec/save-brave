@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Screen } from './components/Screen';
 import { Splash } from './components/Splash';
 import { BottomNav } from './components/BottomNav';
@@ -13,10 +13,12 @@ import { Login } from './screens/Login';
 import { Balance } from './screens/Balance';
 import { Overview } from './screens/Overview';
 import { Plan } from './screens/Plan';
+import { RecapScreen, lastMonth, recapSeenKey } from './screens/Recap';
 import { Recurring } from './screens/Recurring';
 import { Settings } from './screens/Settings';
 import { Transactions } from './screens/Transactions';
-import { friendlyError, runRecurring } from './lib/api';
+import { friendlyError, listTransactions, runRecurring } from './lib/api';
+import { cached } from './lib/cache';
 import { todayLocal } from './lib/month';
 import type { Tx } from './lib/types';
 import { useSession } from './useSession';
@@ -55,6 +57,24 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
       .then((n) => { setRecurringError(null); if (n) changed(); })
       .catch((e) => setRecurringError(friendlyError((e as Error).message)));
   }, [ready, me?.userId, me?.members.length, version]); // not `me`: it changes on every refresh
+  // Long-press "Add expense" on the app icon (manifest shortcuts) opens the app at /?add=1.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (me && params.get('add') === '1') { setParams({}, { replace: true }); openEntry(); }
+  }, [me, params, setParams, openEntry]);
+  // In the first week of a month, the first visit shows last month's recap (once), if there was anything in it.
+  const location = useLocation();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!ready || !me || location.pathname !== '/' || Number(todayLocal().slice(8, 10)) > 7) return;
+    const m = lastMonth();
+    try { if (localStorage.getItem(recapSeenKey(me.userId, m))) return; } catch { return; }
+    let live = true;
+    cached(`${me.userId}:tx:${m}`, () => listTransactions(m))
+      .then((r) => { if (live && r.data.some((t) => t.created_by === me.userId)) navigate(`/recap?m=${m}`); })
+      .catch(() => { /* the recap is a nicety; skip it this time */ });
+    return () => { live = false; };
+  }, [ready, me?.userId]); // eslint-disable-line react-hooks/exhaustive-deps -- once per app open
   useEffect(() => {
     // Already in a household: an invite link opened here can't be used, so say why instead of dropping it silently.
     if (me?.householdId && pendingJoin()) { setPendingJoin(null); setIgnoredJoin(true); }
@@ -95,6 +115,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
         <Route path="/balance" element={<Balance />} />
         <Route path="/more" element={<More />} />
         <Route path="/insights" element={<Insights />} />
+        <Route path="/recap" element={<RecapScreen />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/recurring" element={<Recurring />} />

@@ -23,6 +23,8 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
+        // Long-press the app icon (Android): jump straight to a new entry. App.tsx opens the Add sheet for ?add=1.
+        shortcuts: [{ name: 'Add expense', short_name: 'Add', url: '/?add=1', icons: [{ src: 'icon-192.png', sizes: '192x192' }] }],
       },
     }),
   ],
