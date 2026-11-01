@@ -443,3 +443,24 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
 .recap-link { margin-top: 14px; }
 .story-card { pointer-events: none; } /* taps anywhere go to the left/right halves */
 .story-card .btn { pointer-events: auto; }
+
+/* Celebration: coins burst up from the bottom, with a message */
+.celebration { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; pointer-events: auto; }
+.burst { position: absolute; left: 50%; bottom: 18%; width: 0; height: 0; }
+.coin-fly {
+  position: absolute; width: 26px; height: 26px; margin: -13px; border: 2.5px solid #111; border-radius: 50%; background: var(--tone-3);
+  box-shadow: 2px 3px 0 #111; animation: coin-fly 1100ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.coin-fly.t0 { background: var(--tone-0); } .coin-fly.t1 { background: var(--tone-1); }
+.coin-fly.t2 { background: var(--tone-2); } .coin-fly.t4 { background: var(--tone-4); }
+.celebration-msg {
+  position: relative; margin: 0 24px; padding: 14px 22px; border: var(--line); border-radius: 18px; background: #fff; color: #111;
+  font-size: 1.15rem; font-weight: 700; text-align: center; box-shadow: var(--pop); animation: pop-in 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes coin-fly {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 0; }
+  15% { opacity: 1; }
+  70% { transform: translate(var(--dx), var(--dy)) scale(1) rotate(200deg); opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 60px)) scale(0.9) rotate(260deg); opacity: 0; }
+}
+@keyframes pop-in { from { transform: scale(0.6); opacity: 0; } }

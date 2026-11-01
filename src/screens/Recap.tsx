@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { celebrate } from '../components/Celebration';
 import { Jar } from '../components/Splash';
 import { friendlyError, listContributions, listPlans, listTransactionsRange } from '../lib/api';
 import { cached } from '../lib/cache';
@@ -22,6 +23,7 @@ export function RecapScreen() {
   const [recap, setRecap] = useState<Recap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [i, setI] = useState(0);
+  const cheered = useRef(false);
 
   useEffect(() => {
     if (!me) return;
@@ -30,9 +32,12 @@ export function RecapScreen() {
       cached(`${me.userId}:recap:${month}`, () => listTransactionsRange(addMonths(month, -3), month)),
       cached(`${me.userId}:plans:me`, () => listPlans('me')),
       cached(`${me.userId}:goal-contributions`, listContributions),
-    ]).then(([t, p, c]) => setRecap(monthRecap(me.userId, t.data, p.data, c.data, month)))
-      .catch((e) => setError(friendlyError(e.message)));
-  }, [me, month]);
+    ]).then(([t, p, c]) => {
+      const r = monthRecap(me.userId, t.data, p.data, c.data, month);
+      setRecap(r);
+      if (r.target !== null && r.target > 0 && r.saved >= r.target && !cheered.current) { cheered.current = true; celebrate('Savings target hit!'); }
+    }).catch((e) => setError(friendlyError(e.message)));
+  }, [me?.userId, month]); // eslint-disable-line react-hooks/exhaustive-deps -- not `me`: it changes on every refresh
 
   const close = () => navigate('/', { replace: true });
   const name = (id: string) => categories.find((c) => c.id === id)?.name ?? 'One category';

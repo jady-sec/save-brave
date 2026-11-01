@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { celebrate, haptic } from '../components/Celebration';
 import { Screen } from '../components/Screen';
 import { addContribution, deleteGoal, friendlyError, listContributions, listGoals, saveGoal } from '../lib/api';
 import { cached } from '../lib/cache';
@@ -76,7 +77,12 @@ function GoalCard({ goal, contributions, onChange, onEdit }: { goal: Goal; contr
     const cents = parseCents(amount);
     if (!cents || cents <= 0) { setError('Enter an amount first.'); return; }
     setBusy(true); setError(null);
-    try { await addContribution(me!, goal.id, sign * cents); setAmount(''); onChange(); }
+    try {
+      await addContribution(me!, goal.id, sign * cents);
+      haptic();
+      if (!p.done && p.saved + sign * cents >= goal.target_cents) celebrate(`${goal.name}: goal reached!`);
+      setAmount(''); onChange();
+    }
     catch (err) { setError(friendlyError((err as Error).message)); }
     setBusy(false);
   }

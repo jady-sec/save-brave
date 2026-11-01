@@ -3,6 +3,7 @@ import { Link, Route, Routes, useLocation, useNavigate, useSearchParams } from '
 import { Screen } from './components/Screen';
 import { Splash } from './components/Splash';
 import { BottomNav } from './components/BottomNav';
+import { Celebration } from './components/Celebration';
 import { MeProvider, useMe } from './me';
 import { AddSheet } from './screens/AddSheet';
 import { Goals } from './screens/Goals';
@@ -125,6 +126,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Routes>
       <BottomNav onAdd={() => openEntry()} />
+      <Celebration />
       {sheet && <AddSheet key={sheet.editing?.id ?? 'new'} editing={sheet.editing} onClose={closeSheet} />}
     </div>
   );

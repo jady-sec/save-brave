@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { haptic } from '../components/Celebration';
 import { SplitEditor } from '../components/SplitEditor';
 import { deleteTransaction, friendlyError, listTransactionsRange, saveTransaction } from '../lib/api';
 import { cached } from '../lib/cache';
@@ -131,6 +132,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
       const id = await saveTransaction({ id: editing?.id, type, scope, amount_cents: cents, date, category_id: selected.id, note,
         ...(shared ? { paid_by: paidBy, splits: splits! } : {}) });
       if (shared && !editing && id) notifyPartner({ transaction_id: id });
+      haptic();
       remember(lastCatKey(type, scope), selected.id);
       if (shared) remember(payerKey(selected.id), paidBy);
       changed();
