@@ -5,14 +5,15 @@ import { Avatar } from '../components/Avatar';
 import { CatBadge } from '../components/CatBadge';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
-import { friendlyError, getPlan, listTransactions, listTransactionsRange } from '../lib/api';
+import { friendlyError, getPlan, listRecurring, listTransactions, listTransactionsRange } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { dayStreak } from '../lib/streak';
 import { displayName } from '../lib/profile';
-import type { Plan, Tx } from '../lib/types';
+import type { Plan, RecurringRule, Tx } from '../lib/types';
+import { upcomingBills } from '../lib/upcoming';
 import { useMe } from '../me';
 import { useFollowToday } from '../useFollowToday';
 import { MonthSwitcher } from './Transactions';
@@ -43,6 +44,14 @@ export function Overview() {
     return () => { live = false; };
   }, [me, month, version]);
   useEffect(() => { setData(null); }, [month]);
+  // Coming up: recurring bills due in the next 7 days (only shown on the current month).
+  const [rules, setRules] = useState<RecurringRule[]>([]);
+  useEffect(() => {
+    if (!me) return;
+    let live = true;
+    cached(`${me.userId}:recurring`, listRecurring).then((r) => { if (live) setRules(r.data); }).catch(() => { /* card stays hidden */ });
+    return () => { live = false; };
+  }, [me?.userId, version]); // eslint-disable-line react-hooks/exhaustive-deps
   // Day streak: the last 3 months of entries (the same offline copy the Add sheet's repeat chips use).
   const [streak, setStreak] = useState<number | null>(null);
   useEffect(() => {
@@ -109,6 +118,28 @@ export function Overview() {
             <li className="t1"><strong className="num">{rows.filter((x) => x.level === 'warn').length}</strong>Near limit</li>
             <li className="t2"><strong className="num">{rows.filter((x) => x.level === 'over').length}</strong>Over limit</li>
           </ul>
+          {month === monthKey(todayLocal()) && (() => {
+            const soon = upcomingBills(rules, todayLocal(), 7);
+            if (!soon.length) return null;
+            const when = (d: number) => (d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`);
+            return (
+              <section className="upcoming" aria-labelledby="upcoming-title">
+                <h2 className="section-title" id="upcoming-title">Coming up</h2>
+                <ul>
+                  {soon.map((u) => {
+                    const r = rules.find((x) => x.id === u.id)!;
+                    return (
+                      <li key={u.id}>
+                        <CatBadge id={r.category_id} size={36} />
+                        <span className="up-main"><strong>{r.note || name(r.category_id)}</strong><span className="muted">{r.scope === 'shared' ? 'Shared · ' : ''}added automatically {when(u.days)}</span></span>
+                        <span className="num up-amt">{formatCents(r.amount_cents)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })()}
           {!data!.mine && <p className="muted">No plan yet. <Link to="/plan">Set income, a savings target and limits</Link>.</p>}
 
           <h2 className="section-title">Your budget</h2>

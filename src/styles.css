@@ -503,3 +503,12 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
   .segmented button[aria-pressed='true'], .story-bar span, .celebration-msg, .coin-fly { border-color: #000; }
 }
 .hero .totals, .hero .btn.icon, .hero a.btn.icon { color: var(--ink); }
+
+/* Month: bills coming up */
+.upcoming ul { list-style: none; margin: 0; padding: 6px 14px; border: var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--pop); }
+.upcoming li { display: flex; align-items: center; gap: 12px; min-height: 58px; }
+.upcoming li + li { border-top: 1.5px solid var(--rule); }
+.up-main { flex: 1; min-width: 0; display: grid; }
+.up-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.up-main .muted { font-size: 0.85rem; }
+.up-amt { font-weight: 700; }
