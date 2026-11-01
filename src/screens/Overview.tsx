@@ -12,6 +12,7 @@ import { monthKey, todayLocal } from '../lib/month';
 import { displayName } from '../lib/profile';
 import type { Plan, Tx } from '../lib/types';
 import { useMe } from '../me';
+import { useFollowToday } from '../useFollowToday';
 import { MonthSwitcher } from './Transactions';
 
 export function Overview() {
@@ -19,6 +20,7 @@ export function Overview() {
   const [params, setParams] = useSearchParams(); // History links here with ?m=YYYY-MM
   const asked = params.get('m');
   const [month, setMonth] = useState(asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : monthKey(todayLocal()));
+  useFollowToday(month, setMonth, version);
   // Read once, then drop it: otherwise a refresh or relaunch jumps back to that month.
   useEffect(() => { if (asked) setParams({}, { replace: true }); }, [asked, setParams]);
   const [data, setData] = useState<{ txs: Tx[]; mine: Plan | null; home: Plan | null } | null>(null);

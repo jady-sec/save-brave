@@ -21,3 +21,7 @@ export function daysInMonth(month: string): number {
   const [y, m] = month.split('-').map(Number);
   return new Date(y, m, 0).getDate();
 }
+
+/** The month a screen should show after the calendar month changes while the app stays open. */
+export const followToday = (viewing: string, lastCurrent: string, nowCurrent: string) =>
+  viewing === lastCurrent && nowCurrent !== lastCurrent ? nowCurrent : viewing;

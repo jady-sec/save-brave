@@ -22,6 +22,16 @@ function ProfileEditor() {
   const [tone, setTone] = useState(me?.profile?.tone ?? 0);
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({});
   const [busy, setBusy] = useState(false);
+  // Follow changes saved on the other phone, unless you're in the middle of editing here.
+  const [dirty, setDirty] = useState(false);
+  const saved = me?.profile;
+  useEffect(() => {
+    if (dirty || !me) return;
+    setName(displayName({ email: me.email, display_name: saved?.display_name }).slice(0, 24));
+    setAvatar(saved?.avatar ?? 'fox');
+    setTone(saved?.tone ?? 0);
+  }, [saved?.display_name, saved?.avatar, saved?.tone]); // eslint-disable-line react-hooks/exhaustive-deps
+  const edit = () => { setDirty(true); setMsg({}); };
   if (!me) return null;
 
   async function save(e: FormEvent) {
@@ -29,7 +39,7 @@ function ProfileEditor() {
     const n = cleanName(name);
     if (!n) { setMsg({ error: 'Enter a name of up to 24 characters.' }); return; }
     setBusy(true); setMsg({});
-    try { await saveProfile(me!.userId, { display_name: n, avatar, tone }); setName(n); await refresh(); setMsg({ ok: 'Profile saved' }); }
+    try { await saveProfile(me!.userId, { display_name: n, avatar, tone }); setName(n); setDirty(false); await refresh(); setMsg({ ok: 'Profile saved' }); }
     catch (err) { setMsg({ error: friendlyError((err as Error).message) }); }
     finally { setBusy(false); }
   }
@@ -43,13 +53,13 @@ function ProfileEditor() {
       <form onSubmit={save} className="stack">
         <label className="field">
           <span>Name</span>
-          <input value={name} maxLength={24} autoComplete="nickname" onChange={(e) => { setName(e.target.value); setMsg({}); }} />
+          <input value={name} maxLength={24} autoComplete="nickname" onChange={(e) => { setName(e.target.value); edit(); }} />
         </label>
         <fieldset className="avatar-grid">
           <legend>Avatar</legend>
           {(Object.keys(AVATARS) as AvatarKey[]).map((k) => (
             <label key={k} className={k === avatar ? 'on' : ''}>
-              <input type="radio" name="avatar" className="sr-only" checked={k === avatar} onChange={() => { setAvatar(k); setMsg({}); }} />
+              <input type="radio" name="avatar" className="sr-only" checked={k === avatar} onChange={() => { setAvatar(k); edit(); }} />
               <span aria-hidden="true">{AVATARS[k]}</span><span className="sr-only">{k}</span>
             </label>
           ))}
@@ -58,7 +68,7 @@ function ProfileEditor() {
           <legend>Colour</legend>
           {Array.from({ length: TONES }, (_, t) => (
             <label key={t} className={`t${t} ${t === tone ? 'on' : ''}`}>
-              <input type="radio" name="tone" className="sr-only" checked={t === tone} onChange={() => { setTone(t); setMsg({}); }} />
+              <input type="radio" name="tone" className="sr-only" checked={t === tone} onChange={() => { setTone(t); edit(); }} />
               <span className="sr-only">Colour {t + 1}</span>
             </label>
           ))}

@@ -381,3 +381,11 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
   border: var(--line); border-radius: 999px; background: #fff1c9; font-weight: 600; font-size: 0.85rem; box-shadow: 2px 2px 0 var(--ink);
 }
 .repeat .tag.shared { font-size: 0.75rem; }
+.check { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 500; font-size: 0.95rem; cursor: pointer; }
+.check input { width: 22px; height: 22px; accent-color: var(--orange); margin: 0; }
+.search-summary { margin: 4px 0 0; font-size: 0.9rem; }
+.goal-move .field { min-width: 0; flex: 1 1 0; }
+.goal-move input { width: 100%; min-width: 0; }
+.trend-head { flex-wrap: wrap; }
+.trend-head strong { flex: 1 1 100%; }
+.trend-pill { order: 1; }

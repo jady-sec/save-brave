@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { addMonths, daysInMonth, monthBounds, monthKey, todayLocal } from './month';
+import { addMonths, daysInMonth, followToday, monthBounds, monthKey, todayLocal } from './month';
 
 describe('month helpers', () => {
   test('todayLocal uses local date parts, not UTC', () => {
@@ -22,5 +22,13 @@ describe('month helpers', () => {
     expect(daysInMonth('2026-02')).toBe(28);
     expect(daysInMonth('2100-02')).toBe(28);
     expect(daysInMonth('2026-12')).toBe(31);
+  });
+});
+
+describe('followToday', () => {
+  test('moves on to the new month only when you were looking at the month that just ended', () => {
+    expect(followToday('2026-11', '2026-11', '2026-12')).toBe('2026-12');
+    expect(followToday('2026-09', '2026-11', '2026-12')).toBe('2026-09'); // browsing an old month: stay
+    expect(followToday('2026-11', '2026-11', '2026-11')).toBe('2026-11');
   });
 });

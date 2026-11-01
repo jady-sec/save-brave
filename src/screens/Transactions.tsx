@@ -1,17 +1,20 @@
-import { displayName } from '../lib/profile';
-import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState } from 'react';
-import { Screen } from '../components/Screen';
+import { CatBadge } from '../components/CatBadge';
 import { Icon } from '../components/Icon';
-import { friendlyError, listTransactions } from '../lib/api';
+import { Screen } from '../components/Screen';
+import { friendlyError, listForExport, listTransactions } from '../lib/api';
 import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
+import { displayName } from '../lib/profile';
+import { matchesSearch } from '../lib/search';
 import type { Tx } from '../lib/types';
 import { partnerOf, useMe } from '../me';
+import { useFollowToday } from '../useFollowToday';
 
 export const monthLabel = (m: string) => new Date(`${m}-15T12:00`).toLocaleDateString('en-CA', { month: 'long', year: 'numeric' });
-const dayLabel = (d: string) => new Date(`${d}T12:00`).toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
+const dayLabel = (d: string, withYear = false) => new Date(`${d}T12:00`).toLocaleDateString('en-CA',
+  withYear ? { month: 'short', day: 'numeric', year: 'numeric' } : { weekday: 'short', month: 'short', day: 'numeric' });
 
 export function MonthSwitcher({ month, onChange }: { month: string; onChange: (m: string) => void }) {
   return (
@@ -26,6 +29,7 @@ export function MonthSwitcher({ month, onChange }: { month: string; onChange: (m
 export function Transactions() {
   const { me, categories, version, openEntry } = useMe();
   const [month, setMonth] = useState(monthKey(todayLocal()));
+  useFollowToday(month, setMonth, version);
   const [rows, setRows] = useState<Tx[] | null>(null);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +37,8 @@ export function Transactions() {
   const [scope, setScope] = useState<'all' | 'personal' | 'shared'>('all');
   const [cat, setCat] = useState('all');
   const [q, setQ] = useState('');
+  const [everywhere, setEverywhere] = useState(false); // search all months instead of this one
+  const [all, setAll] = useState<Tx[] | null>(null);
 
   useEffect(() => {
     if (!me) return;
@@ -43,12 +49,23 @@ export function Transactions() {
       .catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };
   }, [me, month, version]);
+  const searchingAll = everywhere && !!q.trim();
+  useEffect(() => {
+    if (!me || !searchingAll) return;
+    let live = true;
+    cached(`${me.userId}:tx:all`, () => listForExport('', ''))
+      .then((r) => { if (live) setAll([...r.data].reverse()); }) // newest first, like the month view
+      .catch((e) => { if (live) setError(friendlyError(e.message)); });
+    return () => { live = false; };
+  }, [me, searchingAll, version]);
   useEffect(() => { setRows(null); setStale(false); }, [month]); // don't show last month's entries under this month's title
 
   const catName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
-  const shown = (rows ?? []).filter((t) =>
+  const source = searchingAll ? all : rows;
+  const shown = (source ?? []).filter((t) =>
     (type === 'all' || t.type === type) && (scope === 'all' || t.scope === scope) && (cat === 'all' || t.category_id === cat)
-    && (!q.trim() || `${t.note ?? ''} ${catName.get(t.category_id) ?? ''}`.toLowerCase().includes(q.trim().toLowerCase())));
+    && matchesSearch(t, catName.get(t.category_id) ?? '', q));
+  const shownTotal = shown.reduce((sum, t) => sum + (t.type === 'income' ? t.amount_cents : -t.amount_cents), 0);
   const byDay = new Map<string, Tx[]>(); // not Map.groupBy: needs iOS 17.4+
   for (const t of shown) byDay.set(t.date, [...(byDay.get(t.date) ?? []), t]);
 
@@ -58,8 +75,9 @@ export function Transactions() {
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded entries. Changes need a connection.</p>}
       <div className="filters">
         <label className="field"><span className="sr-only">Search notes</span>
-          <input type="search" placeholder="Search notes and categories" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input type="search" placeholder="Search notes, categories or amounts" value={q} onChange={(e) => setQ(e.target.value)} />
         </label>
+        <label className="check"><input type="checkbox" checked={everywhere} onChange={(e) => setEverywhere(e.target.checked)} /> Search all months</label>
         <div className="filter-row">
           <label className="field"><span className="sr-only">Type</span>
             <select value={type} onChange={(e) => setType(e.target.value as typeof type)}>
@@ -83,12 +101,15 @@ export function Transactions() {
       </div>
 
       {error && <p className="error" role="alert">{error}</p>}
-      {rows === null ? (!error && <p className="muted">Loading…</p>) : shown.length === 0 ? (
-        <p className="empty muted">{rows.length === 0 ? 'No entries this month yet. Tap + to add one.' : 'Nothing matches these filters.'}</p>
+      {q.trim() && source && shown.length > 0 && (
+        <p className="muted search-summary num" role="status">{shown.length} {shown.length === 1 ? 'entry' : 'entries'}{searchingAll ? ' in all months' : ''} · net {shownTotal < 0 ? '−' : '+'}{formatCents(Math.abs(shownTotal))}</p>
+      )}
+      {source === null ? (!error && <p className="muted">Loading…</p>) : shown.length === 0 ? (
+        <p className="empty muted">{source.length === 0 ? 'No entries this month yet. Tap + to add one.' : 'Nothing matches these filters.'}</p>
       ) : (
         [...byDay].map(([day, list]) => (
           <section key={day} className="day">
-            <h2>{dayLabel(day)}</h2>
+            <h2>{dayLabel(day, searchingAll)}</h2>
             <ul className="tx-list">
               {list.map((t) => (
                 <li key={t.id}>
