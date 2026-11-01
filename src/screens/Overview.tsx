@@ -5,11 +5,12 @@ import { Avatar } from '../components/Avatar';
 import { CatBadge } from '../components/CatBadge';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
-import { friendlyError, getPlan, listTransactions } from '../lib/api';
+import { friendlyError, getPlan, listTransactions, listTransactionsRange } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
-import { monthKey, todayLocal } from '../lib/month';
+import { addMonths, monthKey, todayLocal } from '../lib/month';
+import { dayStreak } from '../lib/streak';
 import { displayName } from '../lib/profile';
 import type { Plan, Tx } from '../lib/types';
 import { useMe } from '../me';
@@ -42,6 +43,17 @@ export function Overview() {
     return () => { live = false; };
   }, [me, month, version]);
   useEffect(() => { setData(null); }, [month]);
+  // Day streak: the last 3 months of entries (the same offline copy the Add sheet's repeat chips use).
+  const [streak, setStreak] = useState<number | null>(null);
+  useEffect(() => {
+    if (!me) return;
+    let live = true;
+    const now = monthKey(todayLocal());
+    cached(`${me.userId}:recent`, () => listTransactionsRange(addMonths(now, -2), now))
+      .then((r) => { if (live) setStreak(dayStreak(me.userId, r.data, todayLocal())); })
+      .catch(() => { /* the tile just stays hidden */ });
+    return () => { live = false; };
+  }, [me?.userId, version]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const catName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   if (!me) return null;
@@ -92,6 +104,7 @@ export function Overview() {
           )}
 
           <ul className="tiles" aria-label="This month at a glance">
+            {streak !== null && <li className="t3"><strong className="num">{streak}</strong>Day streak</li>}
             <li className="t0"><strong className="num">{data!.txs.length}</strong>Entries</li>
             <li className="t1"><strong className="num">{rows.filter((x) => x.level === 'warn').length}</strong>Near limit</li>
             <li className="t2"><strong className="num">{rows.filter((x) => x.level === 'over').length}</strong>Over limit</li>

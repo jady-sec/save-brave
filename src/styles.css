@@ -464,3 +464,6 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
   100% { transform: translate(var(--dx), calc(var(--dy) + 60px)) scale(0.9) rotate(260deg); opacity: 0; }
 }
 @keyframes pop-in { from { transform: scale(0.6); opacity: 0; } }
+.tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tiles li { min-height: 92px; }
+.tiles .t3 { background: linear-gradient(160deg, #fff0a8, var(--tone-3)); }
