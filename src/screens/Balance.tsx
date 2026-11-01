@@ -1,5 +1,6 @@
 import { Avatar } from '../components/Avatar';
 import { displayName } from '../lib/profile';
+import { notifyPartner } from '../lib/push';
 import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -60,7 +61,7 @@ export function Balance() {
     if (cents > -balance!) { setError(`That's more than you owe (${formatCents(-balance!)}).`); return; }
     setBusy(true); setError(null);
     // Clear the prefill so a second tap before the refetch can't record the same payment again.
-    try { await addSettlement(me!, partner!.user_id, cents, todayLocal()); setAmount(''); changed(); }
+    try { notifyPartner({ settlement_id: await addSettlement(me!, partner!.user_id, cents, todayLocal()) }); setAmount(''); changed(); }
     catch (err) { setError(`Not recorded. ${friendlyError((err as Error).message)}`); }
     setBusy(false);
   }

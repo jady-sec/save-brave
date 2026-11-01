@@ -1,9 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Screen } from '../components/Screen';
 import { deleteCategory, friendlyError, fullBackup, listForExport, saveCategory, saveProfile } from '../lib/api';
 import { AVATARS, TONES, cleanName, displayName, type AvatarKey } from '../lib/profile';
+import { disablePush, enablePush, pushState, type PushState } from '../lib/push';
 import { clearCache } from '../lib/cache';
 import { toCsv } from '../lib/csv';
 import { exportRows } from '../lib/export';
@@ -193,7 +194,44 @@ function Export() {
   );
 }
 
-const LAST_BACKUP = 'saveBrave:lastBackup'; // not cache: — a sign-out shouldn't forget when you last backed up
+function Notifications() {
+  const { me } = useMe();
+  const [state, setState] = useState<PushState | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { pushState().then(setState); }, []);
+  if (!me || state === null) return null;
+
+  async function toggle() {
+    setBusy(true); setError(null);
+    try {
+      if (state === 'on') { await disablePush(); setState('off'); } else setState(await enablePush(me!.userId));
+    } catch (err) { setError(`Couldn't change notifications. ${friendlyError((err as Error).message)}`); }
+    setBusy(false);
+  }
+
+  const text: Record<PushState, string> = {
+    on: 'On for this phone. You get a notification when your partner adds a shared entry or settles up.',
+    off: 'Get a notification when your partner adds a shared entry or settles up.',
+    denied: 'Notifications are blocked for Save Brave. Allow them in your phone’s settings, then come back here.',
+    unsupported: 'This browser can’t show notifications. On iPhone, open Save Brave from its home-screen icon (iOS 16.4 or later).',
+    'not-configured': 'Notifications aren’t set up for this app yet.',
+  };
+  return (
+    <section className="stack section">
+      <h2>Notifications</h2>
+      <p className={state === 'on' ? '' : 'muted'}>{text[state]}</p>
+      {error && <p className="error" role="alert">{error}</p>}
+      {(state === 'on' || state === 'off') && (
+        <button type="button" className={state === 'on' ? 'btn' : 'btn primary'} onClick={toggle} disabled={busy}>
+          {busy ? 'One moment…' : state === 'on' ? 'Turn off on this phone' : 'Turn on notifications'}
+        </button>
+      )}
+    </section>
+  );
+}
+
+const LAST_BACKUP ='saveBrave:lastBackup'; // not cache: — a sign-out shouldn't forget when you last backed up
 
 /** The free database plan keeps no backups, so this file is the safety copy. */
 function Backup() {
@@ -235,6 +273,7 @@ export function Settings() {
   return (
     <Screen title="Settings">
       <ProfileEditor />
+      <Notifications />
       <Categories />
       <section className="stack section">
         <h2>Household</h2>
@@ -250,7 +289,7 @@ export function Settings() {
       <section className="stack section">
         <h2>Account</h2>
         <p className="muted">Signed in as {me.email}</p>
-        <button type="button" className="btn" onClick={() => { setPendingJoin(null); clearCache(); supabase.auth.signOut(); }}>Sign out</button>
+        <button type="button" className="btn" onClick={async () => { setPendingJoin(null); clearCache(); await disablePush().catch(() => {}); supabase.auth.signOut(); }}>Sign out</button>
       </section>
     </Screen>
   );

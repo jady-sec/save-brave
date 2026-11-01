@@ -3,6 +3,7 @@ import { SplitEditor } from '../components/SplitEditor';
 import { deleteTransaction, friendlyError, saveTransaction } from '../lib/api';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
 import { displayName } from '../lib/profile';
+import { notifyPartner } from '../lib/push';
 import { todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
 import type { Scope, Split, Tx, TxType } from '../lib/types';
@@ -74,8 +75,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     if (shared && !splits) { setError(splitError ?? 'Enter your share.'); return; }
     setBusy(true); setError(null);
     try {
-      await saveTransaction({ id: editing?.id, type, scope, amount_cents: cents, date, category_id: selected.id, note,
+      const id = await saveTransaction({ id: editing?.id, type, scope, amount_cents: cents, date, category_id: selected.id, note,
         ...(shared ? { paid_by: paidBy, splits: splits! } : {}) });
+      if (shared && !editing && id) notifyPartner({ transaction_id: id });
       remember(lastCatKey(type, scope), selected.id);
       changed();
       onClose();

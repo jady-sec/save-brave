@@ -134,8 +134,8 @@ export async function listSettlements(): Promise<Settlement[]> {
 }
 
 // RLS only accepts a settlement recorded by the person paying (from_user = caller).
-export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string): Promise<void> {
-  must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user: me.userId, to_user, amount_cents, date, created_by: me.userId }));
+export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string): Promise<string> {
+  return must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user: me.userId, to_user, amount_cents, date, created_by: me.userId }).select('id').single())!.id;
 }
 
 export async function deleteSettlement(id: string): Promise<void> {

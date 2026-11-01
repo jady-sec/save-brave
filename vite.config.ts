@@ -8,7 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png'],
-      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,svg}'] }, // woff2: the font must work offline
+      // woff2: the font must work offline. push-sw.js adds the notification handlers (public/push-sw.js).
+      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,svg}'], importScripts: ['push-sw.js'] },
       manifest: {
         name: 'Save Brave',
         short_name: 'Save Brave',
