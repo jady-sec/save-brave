@@ -4,14 +4,19 @@ import { fetchAll } from './paging';
 import { monthBounds } from './month';
 import { supabase } from './supabase';
 import { dueDates } from './recurring';
+import type { AvatarKey, Profile } from './profile';
 import { computeSplit } from './split';
 import type { Category, Plan, RecurringRule, Scope, Settlement, Split, Tx, TxType } from './types';
 
 const TX = '*, splits:transaction_splits(user_id, share_cents)';
 const DESC = { ascending: false };
 
-export interface Member { user_id: string; email: string }
-export interface Me { userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[] }
+/** Profile fields are null until that person sets a name and avatar. */
+export interface Member { user_id: string; email: string; display_name?: string | null; avatar?: AvatarKey | null; tone?: number | null }
+export interface Me {
+  userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[];
+  profile: Profile | null;
+}
 
 function must<T>(r: { data: T; error: { message: string } | null }): T {
   if (r.error) throw new Error(r.error.message);
@@ -34,7 +39,12 @@ export function friendlyError(msg: string): string {
 export async function getMe(user: { id: string; email?: string }): Promise<Me> {
   const hh = must(await supabase.from('households').select('id, name').maybeSingle());
   const members = hh ? must(await supabase.rpc('household_members_view')) as Member[] : [];
-  return { userId: user.id, email: user.email ?? '', householdId: hh?.id ?? null, householdName: hh?.name ?? null, members };
+  const profile = must(await supabase.from('profiles').select('display_name, avatar, tone').eq('user_id', user.id).maybeSingle()) as Profile | null;
+  return { userId: user.id, email: user.email ?? '', householdId: hh?.id ?? null, householdName: hh?.name ?? null, members, profile };
+}
+
+export async function saveProfile(userId: string, p: Profile): Promise<void> {
+  must(await supabase.from('profiles').upsert({ user_id: userId, ...p, updated_at: new Date().toISOString() }));
 }
 
 export async function createHousehold(name: string): Promise<string> {

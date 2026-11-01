@@ -1,13 +1,15 @@
-import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
+import { Avatar } from '../components/Avatar';
+import { CatBadge } from '../components/CatBadge';
 import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, listTransactions } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
 import { monthKey, todayLocal } from '../lib/month';
+import { displayName } from '../lib/profile';
 import type { Plan, Tx } from '../lib/types';
 import { useMe } from '../me';
 import { MonthSwitcher } from './Transactions';
@@ -49,7 +51,13 @@ export function Overview() {
   const status = r && data!.mine ? (r.actualSavings < r.plannedSavings ? 'short' : 'met') : '';
 
   return (
-    <Screen title={<MonthSwitcher month={month} onChange={setMonth} />} hero={r && (
+    <Screen title={<>
+      <Link to="/settings" className="greeting">
+        <Avatar who={{ email: me.email, ...me.profile }} />
+        <span><small>Hello</small><strong>{displayName({ email: me.email, display_name: me.profile?.display_name })}</strong></span>
+      </Link>
+      <MonthSwitcher month={month} onChange={setMonth} />
+    </>} hero={r && (
       <>
         <p className="hero-label">Saved this month</p>
         <p className={`hero-figure num ${status}`}>{formatCents(r.actualSavings)}</p>

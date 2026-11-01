@@ -34,7 +34,7 @@ describe('household_members_view', () => {
     await db.query('insert into household_members (household_id, user_id) values ($1, $2)', [H, B]);
     await call(C, `create_household('Other')`);
     const rows = async (uid: string) =>
-      (await asUser<{ user_id: string; email: string }>(db, uid, 'select * from household_members_view() order by email')).rows;
+      (await asUser<{ user_id: string; email: string }>(db, uid, 'select user_id, email from household_members_view() order by email')).rows;
     expect(await rows(B)).toEqual([{ user_id: A, email: 'a@t' }, { user_id: B, email: 'b@t' }]);
     expect(await rows(C)).toEqual([{ user_id: C, email: 'c@t' }]);
     expect(await rows(D)).toEqual([]);

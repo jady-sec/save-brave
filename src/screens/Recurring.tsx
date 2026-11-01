@@ -1,3 +1,4 @@
+import { displayName } from '../lib/profile';
 import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Screen } from '../components/Screen';
@@ -169,12 +170,12 @@ function RuleForm({ rule, onDone, onCancel }: { rule?: RecurringRule; onDone: ()
       {shared && partner && (
         <>
           <div className="segmented" role="group" aria-label="Paid by">
-            {[[myId, 'I pay'], [partner.user_id, `${partner.email.split('@')[0]} pays`]].map(([id, label]) => (
+            {[[myId, 'I pay'], [partner.user_id, `${displayName(partner)} pays`]].map(([id, label]) => (
               <button key={id} type="button" aria-pressed={paidBy === id} onClick={() => setPaidBy(id)}>{label}</button>
             ))}
           </div>
           <SplitEditor mode={splitMode} mine={mine} onMode={(m) => { setSplitMode(m); setMine(''); }} onMine={setMine}
-            myShare={preview?.[0] ?? null} partnerShare={preview?.[1] ?? null} partnerName={partner.email.split('@')[0]} error={splitError} />
+            myShare={preview?.[0] ?? null} partnerShare={preview?.[1] ?? null} partnerName={displayName(partner)} error={splitError} />
         </>
       )}
       <div className="row">

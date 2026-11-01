@@ -1,3 +1,5 @@
+import { Avatar } from '../components/Avatar';
+import { displayName } from '../lib/profile';
 import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -49,7 +51,7 @@ export function Balance() {
       </Screen>
     );
   }
-  const name = partner.email.split('@')[0];
+  const name = displayName(partner);
   const cents = parseCents(amount);
 
   async function settle(e: FormEvent) {
@@ -70,12 +72,15 @@ export function Balance() {
   }
 
   return (
-    <Screen title="Balance" hero={balance !== null && (balance === 0
-      ? <p className="hero-figure">All settled</p>
-      : <>
-          <p className="hero-label">{balance > 0 ? `${name} owes you` : `You owe ${name}`}</p>
-          <p className="hero-figure num">{formatCents(Math.abs(balance))}</p>
-        </>)}>
+    <Screen title="Balance" hero={<>
+      <div className="hero-who"><Avatar who={partner} size={40} /><span>With {name}</span></div>
+      {balance !== null && (balance === 0
+        ? <p className="hero-figure">All settled</p>
+        : <>
+            <p className="hero-label">{balance > 0 ? `${name} owes you` : `You owe ${name}`}</p>
+            <p className="hero-figure num">{formatCents(Math.abs(balance))}</p>
+          </>)}
+    </>}>
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded balance. Settling up needs a connection.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {balance === null ? (!error && <p className="muted">Loading…</p>) : (

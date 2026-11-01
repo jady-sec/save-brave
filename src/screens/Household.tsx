@@ -1,3 +1,5 @@
+import { Avatar } from '../components/Avatar';
+import { displayName } from '../lib/profile';
 import { useState, type FormEvent } from 'react';
 import { Screen } from '../components/Screen';
 import { cleanInviteCode } from '../lib/invite';
@@ -83,7 +85,7 @@ export function Household({ onSkip }: { onSkip?: () => void }) {
   return (
     <Screen title={me.householdName ?? "Household"}>
       <ul className="list members">
-        {me.members.map((m) => <li key={m.user_id}>{m.email}{m.user_id === me.userId && <span className="muted"> (you)</span>}</li>)}
+        {me.members.map((m) => <li key={m.user_id}><Avatar who={m} size={36} />{displayName(m)}{m.user_id === me.userId && <span className="muted"> (you)</span>}</li>)}
       </ul>
       {!partner && (
         <section className="stack section">

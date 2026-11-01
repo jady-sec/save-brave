@@ -1,3 +1,4 @@
+import { displayName } from '../lib/profile';
 import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '../components/Screen';
@@ -95,7 +96,7 @@ export function Transactions() {
                     <CatBadge name={catName.get(t.category_id) ?? 'Category'} />
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(t.category_id) ?? 'Category'}</span>
-                      {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : `${partnerOf(me)?.email.split('@')[0] ?? 'partner'} paid`}</span>}
+                      {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : `${(partnerOf(me) ? displayName(partnerOf(me)!) : 'partner')} paid`}</span>}
                       {t.note && <span className="tx-note">{t.note}</span>}
                     </span>
                     <span className={`tx-amt num ${t.type}`}>

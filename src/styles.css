@@ -311,3 +311,34 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 @keyframes spark { from { opacity: 0; transform: scale(0.5); } 40% { opacity: 1; } to { opacity: 0; transform: scale(1.15); } }
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
 @keyframes intro-out { to { opacity: 0; transform: scale(1.06); visibility: hidden; } }
+
+/* Avatars and names */
+.avatar {
+  flex: none; display: inline-grid; place-items: center; border: var(--line); border-radius: 50%; line-height: 1;
+  font-weight: 700; color: var(--ink); background: var(--tone-0); overflow: hidden;
+}
+.avatar.t1 { background: var(--tone-1); } .avatar.t2 { background: var(--tone-2); }
+.avatar.t3 { background: var(--tone-3); } .avatar.t4 { background: var(--tone-4); }
+.greeting { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; color: var(--ink); text-decoration: none; width: fit-content; margin-inline: 0; }
+.greeting .avatar { box-shadow: 2px 3px 0 var(--ink); }
+.greeting span { display: grid; line-height: 1.2; }
+.greeting small { font-size: 0.85rem; font-weight: 500; }
+.greeting strong { font-size: 1.05rem; }
+.hero-who { display: flex; align-items: center; gap: 10px; margin-top: 16px; font-weight: 600; }
+.members li { gap: 12px; }
+.profile-preview { display: flex; align-items: center; gap: 14px; font-size: 1.2rem; }
+.profile-preview .avatar { box-shadow: var(--pop); }
+.avatar-grid, .tone-row { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; }
+.avatar-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 340px; }
+.avatar-grid legend, .tone-row legend { font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; padding: 0; }
+.avatar-grid label {
+  display: grid; place-items: center; aspect-ratio: 1; font-size: 1.6rem; cursor: pointer;
+  border: var(--line); border-radius: 14px; background: var(--panel);
+}
+.avatar-grid label.on { background: var(--orange); box-shadow: var(--pop); }
+.tone-row { grid-auto-flow: column; justify-content: start; }
+.tone-row label { width: 44px; height: 44px; border: var(--line); border-radius: 50%; cursor: pointer; background: var(--tone-0); }
+.tone-row label.t1 { background: var(--tone-1); } .tone-row label.t2 { background: var(--tone-2); }
+.tone-row label.t3 { background: var(--tone-3); } .tone-row label.t4 { background: var(--tone-4); }
+.tone-row label.on { outline: 3px solid var(--ink); outline-offset: 3px; }
+.avatar-grid label:has(input:focus-visible), .tone-row label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }

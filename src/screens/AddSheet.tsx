@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { SplitEditor } from '../components/SplitEditor';
 import { deleteTransaction, friendlyError, saveTransaction } from '../lib/api';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
+import { displayName } from '../lib/profile';
 import { todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
 import type { Scope, Split, Tx, TxType } from '../lib/types';
@@ -10,7 +11,6 @@ import { partnerOf, useMe } from '../me';
 const lastCatKey = (type: TxType, scope: Scope) => `cache:lastCategory:${type}:${scope}`; // cache: prefix so sign-out clears it
 const recall = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const remember = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
-const nameOf = (email: string) => email.split('@')[0];
 
 // Native modal <dialog>: traps focus and makes the page inert. Unmounting closes it;
 // Escape arrives as 'cancel', which we route to onClose instead of relying on the 'close' event.
@@ -143,12 +143,12 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
         {shared && partner && (
           <>
             <div className="segmented" role="group" aria-label="Paid by">
-              {[[myId, 'I paid'], [partner.user_id, `${nameOf(partner.email)} paid`]].map(([id, label]) => (
+              {[[myId, 'I paid'], [partner.user_id, `${displayName(partner)} paid`]].map(([id, label]) => (
                 <button key={id} type="button" aria-pressed={paidBy === id} onClick={() => setPaidBy(id)}>{label}</button>
               ))}
             </div>
             <SplitEditor mode={splitMode} mine={mine} onMode={(m) => { setSplitMode(m); setMine(''); }} onMine={setMine}
-              myShare={share(myId)} partnerShare={share(partner.user_id)} partnerName={nameOf(partner.email)} error={splitError} />
+              myShare={share(myId)} partnerShare={share(partner.user_id)} partnerName={displayName(partner)} error={splitError} />
           </>
         )}
 

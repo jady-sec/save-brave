@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { Avatar } from '../components/Avatar';
 import { Screen } from '../components/Screen';
-import { deleteCategory, friendlyError, listForExport, saveCategory } from '../lib/api';
+import { deleteCategory, friendlyError, listForExport, saveCategory, saveProfile } from '../lib/api';
+import { AVATARS, TONES, cleanName, displayName, type AvatarKey } from '../lib/profile';
 import { clearCache } from '../lib/cache';
 import { toCsv } from '../lib/csv';
 import { exportRows } from '../lib/export';
@@ -9,6 +11,63 @@ import { supabase } from '../lib/supabase';
 import type { Scope, TxType } from '../lib/types';
 import { partnerOf, useMe } from '../me';
 import { setPendingJoin } from './Household';
+
+/** Name and avatar, shown to you and your partner (Month greeting, Balance, shared entries). */
+function ProfileEditor() {
+  const { me, refresh } = useMe();
+  const [name, setName] = useState(me ? displayName({ email: me.email, display_name: me.profile?.display_name }).slice(0, 24) : '');
+  const [avatar, setAvatar] = useState<AvatarKey>(me?.profile?.avatar ?? 'fox');
+  const [tone, setTone] = useState(me?.profile?.tone ?? 0);
+  const [msg, setMsg] = useState<{ ok?: string; error?: string }>({});
+  const [busy, setBusy] = useState(false);
+  if (!me) return null;
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    const n = cleanName(name);
+    if (!n) { setMsg({ error: 'Enter a name of up to 24 characters.' }); return; }
+    setBusy(true); setMsg({});
+    try { await saveProfile(me!.userId, { display_name: n, avatar, tone }); setName(n); await refresh(); setMsg({ ok: 'Profile saved' }); }
+    catch (err) { setMsg({ error: friendlyError((err as Error).message) }); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <section className="stack" id="profile">
+      <div className="profile-preview">
+        <Avatar who={{ email: me.email, display_name: name, avatar, tone }} size={72} />
+        <strong>{cleanName(name) ?? 'Your name'}</strong>
+      </div>
+      <form onSubmit={save} className="stack">
+        <label className="field">
+          <span>Name</span>
+          <input value={name} maxLength={24} autoComplete="nickname" onChange={(e) => { setName(e.target.value); setMsg({}); }} />
+        </label>
+        <fieldset className="avatar-grid">
+          <legend>Avatar</legend>
+          {(Object.keys(AVATARS) as AvatarKey[]).map((k) => (
+            <label key={k} className={k === avatar ? 'on' : ''}>
+              <input type="radio" name="avatar" className="sr-only" checked={k === avatar} onChange={() => { setAvatar(k); setMsg({}); }} />
+              <span aria-hidden="true">{AVATARS[k]}</span><span className="sr-only">{k}</span>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="tone-row">
+          <legend>Colour</legend>
+          {Array.from({ length: TONES }, (_, t) => (
+            <label key={t} className={`t${t} ${t === tone ? 'on' : ''}`}>
+              <input type="radio" name="tone" className="sr-only" checked={t === tone} onChange={() => { setTone(t); setMsg({}); }} />
+              <span className="sr-only">Colour {t + 1}</span>
+            </label>
+          ))}
+        </fieldset>
+        {msg.error && <p className="error" role="alert">{msg.error}</p>}
+        {msg.ok && <p className="ok-text" role="status">{msg.ok}</p>}
+        <button className="btn primary" disabled={busy}>{busy ? 'Saving…' : 'Save profile'}</button>
+      </form>
+    </section>
+  );
+}
 
 function Categories() {
   const { me, categories, refresh } = useMe();
@@ -89,7 +148,7 @@ function Export() {
     try {
       const txs = await listForExport(from, to);
       const partner = partnerOf(me!);
-      const csv = toCsv(exportRows(me!.userId, partner ? partner.email.split('@')[0] : 'partner', txs, new Map(categories.map((c) => [c.id, c.name]))));
+      const csv = toCsv(exportRows(me!.userId, partner ? displayName(partner) : 'partner', txs, new Map(categories.map((c) => [c.id, c.name]))));
       // The BOM tells Excel the file is UTF-8, so accented names don't come out garbled.
       setFile({ f: new File(['﻿' + csv], `save-brave-${from || 'all'}${to ? `-to-${to}` : ''}.csv`, { type: 'text/csv' }), rows: txs.length });
     } catch (err) { setError(`Export failed. ${friendlyError((err as Error).message)}`); }
@@ -139,11 +198,12 @@ export function Settings() {
   const partner = partnerOf(me);
   return (
     <Screen title="Settings">
+      <ProfileEditor />
       <Categories />
       <section className="stack section">
         <h2>Household</h2>
         {me.householdId ? (
-          <p>{me.householdName} · {partner ? `with ${partner.email}` : 'waiting for your partner'}</p>
+          <p>{me.householdName} · {partner ? `with ${displayName(partner)}` : 'waiting for your partner'}</p>
         ) : (
           <p className="muted">Not set up yet.</p>
         )}
