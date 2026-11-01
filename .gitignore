@@ -5,3 +5,4 @@ dbs.txt
 .superpowers
 *.tsbuildinfo
 supabase/.temp
+.wrangler
