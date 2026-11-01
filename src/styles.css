@@ -373,3 +373,11 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .spark i { align-self: end; width: 100%; border: 1.5px solid var(--ink); border-radius: 4px 4px 0 0; background: var(--tone-4); }
 .spark .now i { background: var(--orange); }
 .spark small { font-size: 0.65rem; color: var(--ink-2); line-height: 1.4; }
+
+/* Add sheet: repeat chips for frequent entries */
+.repeats { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; margin: 0 -2px; scrollbar-width: none; }
+.repeat {
+  flex: none; display: inline-flex; align-items: center; gap: 4px; min-height: 40px; padding: 0 12px; cursor: pointer;
+  border: var(--line); border-radius: 999px; background: #fff1c9; font-weight: 600; font-size: 0.85rem; box-shadow: 2px 2px 0 var(--ink);
+}
+.repeat .tag.shared { font-size: 0.75rem; }

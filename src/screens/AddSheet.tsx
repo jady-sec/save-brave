@@ -1,15 +1,19 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { SplitEditor } from '../components/SplitEditor';
-import { deleteTransaction, friendlyError, saveTransaction } from '../lib/api';
+import { deleteTransaction, friendlyError, listTransactionsRange, saveTransaction } from '../lib/api';
+import { cached } from '../lib/cache';
+import { frequentEntries, type Frequent } from '../lib/frequent';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
 import { displayName } from '../lib/profile';
 import { notifyPartner } from '../lib/push';
-import { todayLocal } from '../lib/month';
+import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
 import type { Scope, Split, Tx, TxType } from '../lib/types';
 import { partnerOf, useMe } from '../me';
 
 const lastCatKey = (type: TxType, scope: Scope) => `cache:lastCategory:${type}:${scope}`; // cache: prefix so sign-out clears it
+// Who usually pays for each shared category ("rent: me, groceries: her"), so the Paid-by default is right.
+const payerKey = (categoryId: string) => `cache:payer:${categoryId}`;
 const recall = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const remember = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } };
 
@@ -37,6 +41,18 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
   const [mine, setMine] = useState(storedMine !== undefined && !storedIsEqual ? centsToPlain(storedMine) : '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [repeats, setRepeats] = useState<Frequent[]>([]);
+
+  // Repeat chips: your most frequent entries from the last 3 months (from the offline copy when there's no signal).
+  useEffect(() => {
+    if (editing || !me) return;
+    let live = true;
+    const now = monthKey(todayLocal());
+    cached(`${me.userId}:recent`, () => listTransactionsRange(addMonths(now, -2), now))
+      .then((r) => { if (live) setRepeats(frequentEntries(me.userId, r.data, 4)); })
+      .catch(() => { /* chips are a shortcut; without them the sheet works as before */ });
+    return () => { live = false; };
+  }, [editing, me]);
 
   useEffect(() => {
     const d = ref.current!;
@@ -59,6 +75,21 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
   const cents = parseCents(amount);
   const today = todayLocal();
 
+  // New shared entry: default Paid-by to whoever paid last time in this category.
+  useEffect(() => {
+    if (editing || scope !== 'shared' || !selected || !partner) return;
+    const last = recall(payerKey(selected.id));
+    setPaidBy(last === partner.user_id ? partner.user_id : myId);
+  }, [editing, scope, selected?.id, partner, myId]);
+
+  const repeat = (f: Frequent) => {
+    if (f.scope === 'shared' && !canShare) return;
+    setType(f.type); setScope(f.scope); setCategoryId(f.category_id); setAmount(centsToPlain(f.amount_cents));
+    setSplitMode('equal'); setMine(''); setError(null);
+  };
+  const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? 'Entry';
+  const shownRepeats = repeats.filter((f) => (f.scope === 'personal' || canShare) && categories.some((c) => c.id === f.category_id));
+
   let splits: Split[] | null = null;
   let splitError: string | null = null;
   if (shared && partner && cents && (splitMode === 'equal' || mine.trim())) { // no error before they type their share
@@ -79,6 +110,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
         ...(shared ? { paid_by: paidBy, splits: splits! } : {}) });
       if (shared && !editing && id) notifyPartner({ transaction_id: id });
       remember(lastCatKey(type, scope), selected.id);
+      if (shared) remember(payerKey(selected.id), paidBy);
       changed();
       onClose();
     } catch (err) {
@@ -118,6 +150,17 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
               <button key={s} type="button" aria-pressed={scope === s} className={s}
                 onClick={() => { setScope(s); setCategoryId(null); }}>
                 {s === 'personal' ? 'Just me' : 'Shared'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!editing && shownRepeats.length > 0 && (
+          <div className="repeats" role="group" aria-label="Repeat a frequent entry">
+            {shownRepeats.map((f) => (
+              <button key={`${f.scope}${f.category_id}${f.amount_cents}`} type="button" className="repeat" onClick={() => repeat(f)}>
+                <span>{catName(f.category_id)}</span> <span className="num">{formatCents(f.amount_cents)}</span>
+                {f.scope === 'shared' && <span className="tag shared"> · shared</span>}
               </button>
             ))}
           </div>
