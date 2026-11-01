@@ -6,14 +6,17 @@ import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
+import { spendingTrends } from '../lib/trends';
 import type { Plan, Tx } from '../lib/types';
 import { useMe } from '../me';
 import { monthLabel } from './Transactions';
 
 const MONTHS = 12;
+const TREND_MONTHS = 6;
+const TREND_ROWS = 6;
 
 export function History() {
-  const { me, version } = useMe();
+  const { me, categories, version } = useMe();
   const [data, setData] = useState<{ txs: Tx[]; plans: Plan[] } | null>(null);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +40,10 @@ export function History() {
     return { m, r, plan };
   });
   const saved12 = months.reduce((s, x) => s + (x.r?.actualSavings ?? 0), 0);
+  const catName = new Map(categories.map((c) => [c.id, c.name]));
+  const trends = data ? spendingTrends(me.userId, data.txs, to, TREND_MONTHS).slice(0, TREND_ROWS) : [];
+  const short = (m: string) => new Date(`${m}-15T12:00`).toLocaleString('en-CA', { month: 'short' });
+  const trendMonths = Array.from({ length: TREND_MONTHS }, (_, i) => addMonths(to, i - TREND_MONTHS + 1));
 
   return (
     <Screen title="History" hero={data && (
@@ -48,6 +55,38 @@ export function History() {
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded history.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {!data ? (!error && <p className="muted">Loading…</p>) : (
+        <>
+        {trends.length > 0 && (
+          <section aria-labelledby="trends-title">
+            <h2 className="section-title" id="trends-title">Spending trends</h2>
+            <p className="muted trend-note">This month so far, against your average for the 3 months before.</p>
+            <ul className="trends">
+              {trends.map((t) => {
+                const top = Math.max(...t.series, 1);
+                return (
+                  <li key={t.category_id} className="trend-card">
+                    <div className="trend-head">
+                      <strong>{catName.get(t.category_id) ?? 'Category'}</strong>
+                      {t.change !== null && t.change !== 0 && (
+                        <span className={`trend-pill ${t.change > 0 ? 'up' : 'down'}`}>{t.change > 0 ? '▲ up' : '▼ down'} {Math.abs(t.change)}%</span>
+                      )}
+                    </div>
+                    <p className="num trend-figures"><strong>{formatCents(t.current)}</strong> <span className="muted">· avg {formatCents(t.average)}</span></p>
+                    <div className="spark" role="img" aria-label={trendMonths.map((m, i) => `${short(m)} ${formatCents(t.series[i])}`).join(', ')}>
+                      {t.series.map((v, i) => (
+                        <span key={i} className={i === t.series.length - 1 ? 'now' : ''}>
+                          <i style={{ height: `${Math.max(4, (v * 100) / top)}%` }} />
+                          <small>{short(trendMonths[i]).slice(0, 1)}</small>
+                        </span>
+                      ))}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+        <h2 className="section-title">Month by month</h2>
         <ul className="history">
           {months.map(({ m, r, plan }) => {
             const status = !plan ? null : r!.actualSavings >= r!.plannedSavings ? 'met' : 'short';
@@ -65,6 +104,7 @@ export function History() {
             );
           })}
         </ul>
+        </>
       )}
     </Screen>
   );
