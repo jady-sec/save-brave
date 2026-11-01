@@ -5,6 +5,7 @@ import { Splash } from './components/Splash';
 import { BottomNav } from './components/BottomNav';
 import { MeProvider, useMe } from './me';
 import { AddSheet } from './screens/AddSheet';
+import { Goals } from './screens/Goals';
 import { History } from './screens/History';
 import { Household, pendingJoin, setPendingJoin } from './screens/Household';
 import { Login } from './screens/Login';
@@ -28,7 +29,7 @@ function Placeholder({ title }: { title: string }) {
 }
 
 function More() {
-  const items = [['/plan', 'Plan'], ['/recurring', 'Recurring'], ['/history', 'History'], ['/settings', 'Settings']];
+  const items = [['/goals', 'Goals'], ['/plan', 'Plan'], ['/recurring', 'Recurring'], ['/history', 'History'], ['/settings', 'Settings']];
   return (
     <Screen title="More">
       <ul className="list">
@@ -92,6 +93,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
         <Route path="/tx" element={<Transactions />} />
         <Route path="/balance" element={<Balance />} />
         <Route path="/more" element={<More />} />
+        <Route path="/goals" element={<Goals />} />
         <Route path="/plan" element={<Plan />} />
         <Route path="/recurring" element={<Recurring />} />
         <Route path="/history" element={<History />} />

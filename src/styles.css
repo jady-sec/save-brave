@@ -342,3 +342,18 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .tone-row label.t3 { background: var(--tone-3); } .tone-row label.t4 { background: var(--tone-4); }
 .tone-row label.on { outline: 3px solid var(--ink); outline-offset: 3px; }
 .avatar-grid label:has(input:focus-visible), .tone-row label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* Savings goals */
+.goal-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.goal-card { display: grid; gap: 10px; padding: 14px; border: var(--line); border-radius: var(--radius); background: var(--panel); box-shadow: var(--pop); }
+.goal-card.done { background: #eafaf5; }
+.goal-head { display: flex; gap: 12px; align-items: center; }
+.jar-meter { flex: none; width: 72px; height: 72px; }
+.goal-text { display: grid; gap: 2px; min-width: 0; }
+.goal-name { font-size: 1.1rem; overflow-wrap: anywhere; }
+.goal-text .tag { justify-self: start; font-size: 0.78rem; font-weight: 600; color: var(--ink-2); }
+.goal-split { margin: 0; font-size: 0.9rem; font-weight: 500; }
+.goal-move { display: flex; gap: 8px; align-items: end; }
+.goal-move .btn { padding: 0 14px; }
+.goal-form { margin-bottom: 18px; padding: 14px; border: var(--line); border-radius: var(--radius); background: var(--panel); }
+.goal-form h2 { margin: 0; font-size: 1.1rem; }

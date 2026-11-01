@@ -4,6 +4,7 @@ import { fetchAll } from './paging';
 import { monthBounds } from './month';
 import { supabase } from './supabase';
 import { dueDates } from './recurring';
+import type { Contribution, Goal } from './goals';
 import type { AvatarKey, Profile } from './profile';
 import { computeSplit } from './split';
 import type { Category, Plan, RecurringRule, Scope, Settlement, Split, Tx, TxType } from './types';
@@ -224,6 +225,7 @@ const BACKUP_TABLES: [string, string, string[]][] = [
   ['households', '*', ['id']], ['profiles', '*', ['user_id']], ['categories', '*', ['id']],
   ['transactions', TX, ['date', 'id']], ['settlements', '*', ['date', 'id']], ['recurring_rules', '*', ['id']],
   ['monthly_plans', '*', ['month', 'id']], ['category_limits', '*', ['plan_id', 'category_id']],
+  ['goals', '*', ['created_at', 'id']], ['goal_contributions', '*', ['date', 'id']],
 ];
 
 /** Everything you can see, as one JSON document: your own records plus the shared ones. */
@@ -242,4 +244,30 @@ export async function listForExport(from: string, to: string): Promise<Tx[]> {
     if (to) q = q.lte('date', to);
     return q.order('date').order('created_at').order('id').range(a, b);
   });
+}
+
+// ---- Savings goals (migration 0013) ----
+export async function listGoals(): Promise<Goal[]> {
+  return fetchAll<Goal>((a, b) => supabase.from('goals').select('*').order('created_at').order('id').range(a, b));
+}
+
+export async function listContributions(): Promise<Contribution[]> {
+  return fetchAll<Contribution>((a, b) => supabase.from('goal_contributions').select('id, goal_id, user_id, amount_cents, date')
+    .order('date', DESC).order('id').range(a, b));
+}
+
+export async function saveGoal(me: Me, g: { id?: string; name: string; target_cents: number; shared: boolean }): Promise<void> {
+  const owner: { user_id: string | null; household_id: string | null } = g.shared
+    ? { user_id: null, household_id: me.householdId } : { user_id: me.userId, household_id: null };
+  const row = { name: g.name, target_cents: g.target_cents, ...owner };
+  must(g.id ? await supabase.from('goals').update(row).eq('id', g.id) : await supabase.from('goals').insert(row));
+}
+
+export async function deleteGoal(id: string): Promise<void> {
+  must(await supabase.from('goals').delete().eq('id', id));
+}
+
+/** Negative amounts take money out of the goal. */
+export async function addContribution(me: Me, goal_id: string, amount_cents: number): Promise<void> {
+  must(await supabase.from('goal_contributions').insert({ goal_id, user_id: me.userId, amount_cents }));
 }
