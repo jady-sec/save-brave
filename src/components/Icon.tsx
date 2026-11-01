@@ -6,6 +6,7 @@ const paths = {
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   left: 'M15 5l-7 7 7 7',
   right: 'M9 5l7 7-7 7',
+  refresh: 'M20 12a8 8 0 1 1-2.34-5.66L20 8.7M20 4v4.7h-4.7',
 };
 
 export type IconName = keyof typeof paths;

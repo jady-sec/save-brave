@@ -54,5 +54,12 @@ export function useMe(): MeState {
   return v;
 }
 
+/** Reloads everything from the server; null outside the signed-in app (Login). */
+export function useReload(): (() => Promise<void>) | null {
+  const v = useContext(Ctx);
+  if (!v) return null;
+  return async () => { await v.refresh(); v.changed(); };
+}
+
 /** The other member of my household, if they have joined. */
 export const partnerOf = (me: Me) => me.members.find((m) => m.user_id !== me.userId) ?? null;
