@@ -285,13 +285,29 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 .h-detail, .h-target { font-size: 0.85rem; }
 .h-target { text-align: right; }
 
-/* Launch screen: also inlined in index.html so it shows before the app's code loads. */
-.splash { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; background: var(--orange); color: var(--ink); text-align: center; }
-.splash svg { width: 128px; height: 128px; margin-bottom: 8px; }
-/* Coins drop into the jar one after another, behind the lid. */
-.splash.intro .coin { animation: coin-drop 520ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
-.splash.intro .c2 { animation-delay: 140ms; }
-.splash.intro .c3 { animation-delay: 280ms; }
-.splash-name { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+/* Launch screen (while loading) and the opening animation (#intro in index.html, run by src/intro.ts). */
+.splash { position: fixed; inset: 0; z-index: 50; display: grid; place-content: center; justify-items: center; gap: 10px; background: var(--orange); color: var(--ink); text-align: center; }
+.splash[hidden] { display: none; }
+.splash svg { width: 132px; height: 132px; margin-bottom: 8px; overflow: visible; }
+.splash-name { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
 .splash-tag { margin: 0; font-weight: 500; }
-@keyframes coin-drop { from { transform: translateY(-46px); opacity: 0; } 30% { opacity: 1; } }
+.splash .jar, .splash .lid, .splash .coin, .splash .spark { transform-box: fill-box; }
+/* ~1.8s: jar pops in, lid lifts, three coins drop in, lid shuts, jar wiggles with a sparkle, words rise. */
+.splash.play .jar { transform-origin: 50% 100%; animation: jar-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both, jar-wiggle 420ms 1180ms ease-in-out; }
+.splash.play .lid { transform-origin: 100% 100%; animation: lid 1000ms 260ms ease-in-out both; }
+.splash.play .coin { animation: coin-drop 460ms cubic-bezier(0.34, 1.4, 0.64, 1) both; }
+.splash.play .c1 { animation-delay: 480ms; }
+.splash.play .c2 { animation-delay: 620ms; }
+.splash.play .c3 { animation-delay: 760ms; }
+.splash.play .spark { transform-origin: 50% 50%; animation: spark 520ms 1200ms ease-out both; }
+.splash.play .splash-name { animation: rise 460ms 880ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.splash.play .splash-tag { animation: rise 460ms 1020ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.splash.leaving { animation: intro-out 340ms ease-in forwards; }
+.splash .spark { opacity: 0; }
+@keyframes jar-pop { from { transform: scale(0.4) translateY(30px); opacity: 0; } 40% { opacity: 1; } }
+@keyframes lid { 22%, 62% { transform: translate(5px, -14px) rotate(16deg); } 80%, 100% { transform: none; } }
+@keyframes coin-drop { from { transform: translateY(-58px); opacity: 0; } 25% { opacity: 1; } }
+@keyframes jar-wiggle { 25% { transform: rotate(-6deg); } 50% { transform: rotate(5deg); } 75% { transform: rotate(-2deg); } }
+@keyframes spark { from { opacity: 0; transform: scale(0.5); } 40% { opacity: 1; } to { opacity: 0; transform: scale(1.15); } }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes intro-out { to { opacity: 0; transform: scale(1.06); visibility: hidden; } }

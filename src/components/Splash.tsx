@@ -1,5 +1,5 @@
-/** Launch screen while the app checks the sign-in and loads your numbers. index.html carries the same markup,
- *  animated, so it appears before this code loads; this copy stays still so the animation doesn't replay. */
+/** Launch screen while the app checks the sign-in and loads your numbers. The opening animation (#intro in
+ *  index.html, src/intro.ts) plays over it; this copy stays still, so a slow load just rests on the jar. */
 export function Splash() {
   return (
     <div className="splash" role="status" aria-label="Loading Save Brave">
