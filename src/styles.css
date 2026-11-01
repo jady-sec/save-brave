@@ -418,3 +418,4 @@ fieldset { min-inline-size: 0; } /* default min-content width pushed the sheet w
 }
 .goals-link > span:first-child { display: grid; font-size: 1rem; }
 .goals-link .num { font-size: 1.3rem; font-weight: 700; }
+html.sheet-open, html.sheet-open body { overflow: hidden; }

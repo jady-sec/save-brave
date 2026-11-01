@@ -64,6 +64,28 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     return () => { d.removeEventListener('cancel', onCancel); d.close(); };
   }, [onClose, editing]);
 
+  // Keep the whole sheet above the on-screen keyboard. Phones don't shrink the page for the keyboard; iPhone
+  // scrolls everything up instead, which pushed the title and Expense/Income off the top. So sit the sheet on top
+  // of the keyboard (the visual viewport's bottom) and cap its height to the space that's left.
+  useEffect(() => {
+    const d = ref.current!;
+    const vv = window.visualViewport;
+    document.documentElement.classList.add('sheet-open'); // stop the page behind from scrolling under it
+    const fit = () => {
+      if (!vv) return;
+      d.style.bottom = `${Math.max(0, window.innerHeight - vv.height - vv.offsetTop)}px`;
+      d.style.maxHeight = `${Math.min(vv.height - 8, window.innerHeight * 0.92)}px`;
+    };
+    fit();
+    vv?.addEventListener('resize', fit);
+    vv?.addEventListener('scroll', fit);
+    return () => {
+      document.documentElement.classList.remove('sheet-open');
+      vv?.removeEventListener('resize', fit);
+      vv?.removeEventListener('scroll', fit);
+    };
+  }, []);
+
   const shared = scope === 'shared';
   // Shared needs a partner: a split made while alone couldn't cover both members once they join.
   const canShare = !!partner && type === 'expense' && !editing;
