@@ -69,3 +69,12 @@ describe('goals', () => {
     expect((await db.query<{ s: number }>('select sum(amount_cents)::int as s from goal_contributions')).rows[0].s).toBe(600);
   });
 });
+
+describe('goal ownership is fixed once created', () => {
+  test("a partner can't turn a shared goal into their own personal one (or the reverse)", async () => {
+    const shared = await goal(A, true);
+    await expect(asUser(db, B, 'update goals set household_id = null, user_id = $1 where id = $2', [B, shared])).rejects.toThrow();
+    const mine = await goal(A, false);
+    await expect(asUser(db, A, 'update goals set user_id = null, household_id = $1 where id = $2', [H, mine])).rejects.toThrow();
+  });
+});

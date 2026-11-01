@@ -4,7 +4,8 @@
 create table public.push_subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
-  endpoint text not null unique check (endpoint like 'https://%'),
+  -- Only real push services, so the notify function can't be pointed at arbitrary URLs.
+  endpoint text not null unique check (endpoint ~ '^https://(fcm\.googleapis\.com|([a-z0-9-]+\.)*push\.apple\.com|updates\.push\.services\.mozilla\.com|([a-z0-9-]+\.)*notify\.windows\.com)/'),
   p256dh text not null,
   auth text not null,
   created_at timestamptz not null default now()

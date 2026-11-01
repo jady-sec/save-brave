@@ -80,7 +80,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     if (editing || scope !== 'shared' || !selected || !partner) return;
     const last = recall(payerKey(selected.id));
     setPaidBy(last === partner.user_id ? partner.user_id : myId);
-  }, [editing, scope, selected?.id, partner, myId]);
+  }, [editing, scope, selected?.id, partner?.user_id, myId]); // not partner: a new object on every refresh would reset a hand-picked payer
 
   const repeat = (f: Frequent) => {
     if (f.scope === 'shared' && !canShare) return;

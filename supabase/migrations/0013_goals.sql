@@ -41,3 +41,14 @@ begin
     alter publication supabase_realtime add table public.goals, public.goal_contributions;
   end if;
 end $$;
+
+-- A goal stays personal or shared for life: otherwise a partner could turn a shared goal into their own and
+-- take it (and the other person's contributions) out of view.
+create function public.goals_keep_owner() returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.user_id is distinct from old.user_id or new.household_id is distinct from old.household_id then
+    raise exception 'a goal can''t change owner';
+  end if;
+  return new;
+end $$;
+create trigger goals_keep_owner before update on public.goals for each row execute function public.goals_keep_owner();

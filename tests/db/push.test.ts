@@ -18,36 +18,46 @@ beforeEach(async () => {
 
 describe('push subscriptions', () => {
   test('each person sees and removes only their own devices', async () => {
-    await subscribe(A, 'https://push/a1');
-    await subscribe(B, 'https://push/b1');
-    expect((await asUser(db, A, 'select endpoint from push_subscriptions')).rows).toEqual([{ endpoint: 'https://push/a1' }]);
+    await subscribe(A, 'https://fcm.googleapis.com/fcm/send/a1');
+    await subscribe(B, 'https://fcm.googleapis.com/fcm/send/b1');
+    expect((await asUser(db, A, 'select endpoint from push_subscriptions')).rows).toEqual([{ endpoint: 'https://fcm.googleapis.com/fcm/send/a1' }]);
     await asUser(db, A, 'delete from push_subscriptions');
-    expect((await db.query('select endpoint from push_subscriptions order by endpoint')).rows).toEqual([{ endpoint: 'https://push/b1' }]);
+    expect((await db.query('select endpoint from push_subscriptions order by endpoint')).rows).toEqual([{ endpoint: 'https://fcm.googleapis.com/fcm/send/b1' }]);
   });
   test("I can't register a device for someone else", async () => {
-    await expect(subscribe(A, 'https://push/x', B)).rejects.toThrow();
+    await expect(subscribe(A, 'https://fcm.googleapis.com/fcm/send/x', B)).rejects.toThrow();
   });
   test('the notify function can reach my partner’s devices only, never mine or a stranger’s', async () => {
-    await subscribe(A, 'https://push/a1');
-    await subscribe(B, 'https://push/b1');
-    await subscribe(B, 'https://push/b2');
-    await subscribe(C, 'https://push/c1');
-    expect(await targets(A)).toEqual(['https://push/b1', 'https://push/b2']);
-    expect(await targets(B)).toEqual(['https://push/a1']);
+    await subscribe(A, 'https://fcm.googleapis.com/fcm/send/a1');
+    await subscribe(B, 'https://fcm.googleapis.com/fcm/send/b1');
+    await subscribe(B, 'https://fcm.googleapis.com/fcm/send/b2');
+    await subscribe(C, 'https://fcm.googleapis.com/fcm/send/c1');
+    expect(await targets(A)).toEqual(['https://fcm.googleapis.com/fcm/send/b1', 'https://fcm.googleapis.com/fcm/send/b2']);
+    expect(await targets(B)).toEqual(['https://fcm.googleapis.com/fcm/send/a1']);
     expect(await targets(C)).toEqual([]);
     await expect(asUser(db, null, 'select * from partner_push_targets()')).rejects.toThrow(/permission denied/);
   });
   test("dropping a dead device works for my partner's devices only", async () => {
-    await subscribe(B, 'https://push/b1');
-    await subscribe(C, 'https://push/c1');
-    await asUser(db, A, 'select drop_partner_push_target($1)', ['https://push/c1']);
-    await asUser(db, A, 'select drop_partner_push_target($1)', ['https://push/b1']);
-    expect((await db.query('select endpoint from push_subscriptions')).rows).toEqual([{ endpoint: 'https://push/c1' }]);
+    await subscribe(B, 'https://fcm.googleapis.com/fcm/send/b1');
+    await subscribe(C, 'https://fcm.googleapis.com/fcm/send/c1');
+    await asUser(db, A, 'select drop_partner_push_target($1)', ['https://fcm.googleapis.com/fcm/send/c1']);
+    await asUser(db, A, 'select drop_partner_push_target($1)', ['https://fcm.googleapis.com/fcm/send/b1']);
+    expect((await db.query('select endpoint from push_subscriptions')).rows).toEqual([{ endpoint: 'https://fcm.googleapis.com/fcm/send/c1' }]);
   });
   test('the same phone re-subscribing replaces its old entry', async () => {
-    await subscribe(A, 'https://push/a1');
-    await asUser(db, A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ($1, 'https://push/a1', 'k2', 's2')
+    await subscribe(A, 'https://fcm.googleapis.com/fcm/send/a1');
+    await asUser(db, A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ($1, 'https://fcm.googleapis.com/fcm/send/a1', 'k2', 's2')
       on conflict (endpoint) do update set p256dh = excluded.p256dh, auth = excluded.auth`, [A]);
     expect((await db.query('select p256dh from push_subscriptions')).rows).toEqual([{ p256dh: 'k2' }]);
   });
+});
+
+test('only real push services are accepted as endpoints', async () => {
+  for (const ok of ['https://fcm.googleapis.com/fcm/send/abc', 'https://web.push.apple.com/QJ', 'https://updates.push.services.mozilla.com/wpush/v2/x']) {
+    await expect(subscribe(A, ok)).resolves.toBeTruthy();
+  }
+  await expect(subscribe(A, 'https://evil.example.com/hook')).rejects.toThrow();
+  await expect(subscribe(A, 'https://fcm.googleapis.com.evil.com/x')).rejects.toThrow();
+  await expect(subscribe(A, 'https://fcmxgoogleapis.com/x')).rejects.toThrow();
+  await expect(subscribe(A, 'https://evilpush.apple.com/x')).rejects.toThrow();
 });

@@ -1,7 +1,7 @@
 // Every database call the UI makes. Errors surface as thrown Error with a user-facing message.
 import { isNetworkError } from './cache';
 import { fetchAll } from './paging';
-import { monthBounds } from './month';
+import { monthBounds, todayLocal } from './month';
 import { supabase } from './supabase';
 import { dueDates } from './recurring';
 import type { Contribution, Goal } from './goals';
@@ -269,5 +269,5 @@ export async function deleteGoal(id: string): Promise<void> {
 
 /** Negative amounts take money out of the goal. */
 export async function addContribution(me: Me, goal_id: string, amount_cents: number): Promise<void> {
-  must(await supabase.from('goal_contributions').insert({ goal_id, user_id: me.userId, amount_cents }));
+  must(await supabase.from('goal_contributions').insert({ goal_id, user_id: me.userId, amount_cents, date: todayLocal() })); // local date, not the server's UTC day
 }

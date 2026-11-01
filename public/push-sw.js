@@ -14,9 +14,12 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data && event.notification.data.url || '/';
-  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
-    const open = windows.find((w) => 'focus' in w);
-    if (open) { open.navigate(url); return open.focus(); }
-    return self.clients.openWindow(url);
-  }));
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const open = windows[0];
+    if (!open) return self.clients.openWindow(url);
+    await open.focus();
+    // navigate() rejects for a window this worker doesn't control yet; the app still comes to the front.
+    try { await open.navigate(url); } catch { /* stay on the current screen */ }
+  })());
 });
