@@ -1,0 +1,10 @@
+// Deployed as a static-assets Worker: `npm run build && npx wrangler deploy`
+{
+  "name": "save-brave",
+  "compatibility_date": "2025-10-01",
+  "assets": {
+    "directory": "./dist",
+    // Serves index.html for app routes like /plan (replaces Pages' _redirects)
+    "not_found_handling": "single-page-application"
+  }
+}
