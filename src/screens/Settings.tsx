@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Avatar } from '../components/Avatar';
 import { Screen } from '../components/Screen';
-import { deleteCategory, friendlyError, listForExport, saveCategory, saveProfile } from '../lib/api';
+import { deleteCategory, friendlyError, fullBackup, listForExport, saveCategory, saveProfile } from '../lib/api';
 import { AVATARS, TONES, cleanName, displayName, type AvatarKey } from '../lib/profile';
 import { clearCache } from '../lib/cache';
 import { toCsv } from '../lib/csv';
 import { exportRows } from '../lib/export';
+import { todayLocal } from '../lib/month';
 import { supabase } from '../lib/supabase';
 import type { Scope, TxType } from '../lib/types';
 import { partnerOf, useMe } from '../me';
@@ -192,6 +193,41 @@ function Export() {
   );
 }
 
+const LAST_BACKUP = 'saveBrave:lastBackup'; // not cache: — a sign-out shouldn't forget when you last backed up
+
+/** The free database plan keeps no backups, so this file is the safety copy. */
+function Backup() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [last, setLast] = useState(() => { try { return localStorage.getItem(LAST_BACKUP); } catch { return null; } });
+
+  async function run() {
+    setBusy(true); setError(null);
+    try {
+      const data = await fullBackup();
+      const day = todayLocal();
+      const f = new File([JSON.stringify(data, null, 1)], `save-brave-backup-${day}.json`, { type: 'application/json' });
+      const url = URL.createObjectURL(f);
+      Object.assign(document.createElement('a'), { href: url, download: f.name }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      try { localStorage.setItem(LAST_BACKUP, day); } catch { /* private mode */ }
+      setLast(day);
+    } catch (err) { setError(`Backup failed. ${friendlyError((err as Error).message)}`); }
+    setBusy(false);
+  }
+
+  return (
+    <section className="stack section">
+      <h2>Backup</h2>
+      <p className="muted">Downloads everything you can see (your entries, the shared ones, plans, recurring items) as one file.
+        Keep it somewhere safe, like your cloud drive. Once a month is plenty.</p>
+      <p>{last ? `Last backup on this device: ${last}` : 'No backup from this device yet.'}</p>
+      {error && <p className="error" role="alert">{error}</p>}
+      <button type="button" className="btn" onClick={run} disabled={busy}>{busy ? 'Preparing…' : 'Download full backup'}</button>
+    </section>
+  );
+}
+
 export function Settings() {
   const { me } = useMe();
   if (!me) return null;
@@ -210,6 +246,7 @@ export function Settings() {
         <Link className="btn" to="/household">{me.householdId && !partner ? 'Invite partner' : me.householdId ? 'View household' : 'Set up household'}</Link>
       </section>
       <Export />
+      <Backup />
       <section className="stack section">
         <h2>Account</h2>
         <p className="muted">Signed in as {me.email}</p>

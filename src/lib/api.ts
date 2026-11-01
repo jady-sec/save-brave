@@ -219,6 +219,22 @@ export async function listPlans(owner: PlanOwner): Promise<Plan[]> {
 }
 
 /** Every entry I can see (RLS: mine and the household's shared), optionally between two dates inclusive. */
+// Every table a backup holds, with a stable order for paging. RLS limits it to what this person can see.
+const BACKUP_TABLES: [string, string, string[]][] = [
+  ['households', '*', ['id']], ['profiles', '*', ['user_id']], ['categories', '*', ['id']],
+  ['transactions', TX, ['date', 'id']], ['settlements', '*', ['date', 'id']], ['recurring_rules', '*', ['id']],
+  ['monthly_plans', '*', ['month', 'id']], ['category_limits', '*', ['plan_id', 'category_id']],
+];
+
+/** Everything you can see, as one JSON document: your own records plus the shared ones. */
+export async function fullBackup(): Promise<Record<string, unknown>> {
+  const out: Record<string, unknown> = { app: 'Save Brave', version: 1, exported_at: new Date().toISOString() };
+  for (const [table, cols, order] of BACKUP_TABLES) {
+    out[table] = await fetchAll((a, b) => order.reduce((q, c) => q.order(c), supabase.from(table).select(cols)).range(a, b));
+  }
+  return out;
+}
+
 export async function listForExport(from: string, to: string): Promise<Tx[]> {
   return fetchAll<Tx>((a, b) => {
     let q = supabase.from('transactions').select(TX);
