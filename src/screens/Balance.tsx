@@ -1,3 +1,4 @@
+import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Screen } from '../components/Screen';
@@ -97,6 +98,7 @@ export function Balance() {
               {activity.map((a) => a.kind === 'tx' ? (
                 <li key={`t${a.t.id}`}>
                   <button type="button" onClick={() => openEntry(a.t)}>
+                    <CatBadge name={catName.get(a.t.category_id) ?? 'Category'} />
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(a.t.category_id) ?? 'Category'}</span>
                       <span className="tx-note">{dayLabel(a.date)} · {a.t.paid_by === me.userId ? 'you paid' : `${name} paid`}{a.t.note ? ` · ${a.t.note}` : ''}</span>

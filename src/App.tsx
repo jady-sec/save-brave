@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 import { Screen } from './components/Screen';
+import { Splash } from './components/Splash';
 import { BottomNav } from './components/BottomNav';
 import { MeProvider, useMe } from './me';
 import { AddSheet } from './screens/AddSheet';
@@ -67,7 +68,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
       </Screen>
     );
   }
-  if (!me) return null;
+  if (!me) return <Splash />;
   if (!me.householdId && !skipped) return <Household onSkip={() => { setPendingJoin(null); setSkipped(true); }} />;
 
   return (
@@ -106,7 +107,7 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
 
 export function App() {
   const session = useSession();
-  if (session === undefined) return null;
+  if (session === undefined) return <Splash />;
   if (session === null) return <Login />;
   return <SignedIn key={session.user.id} user={session.user} />;
 }

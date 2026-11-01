@@ -1,3 +1,4 @@
+import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Screen } from '../components/Screen';
 import { SplitEditor } from '../components/SplitEditor';
@@ -52,6 +53,7 @@ export function Recurring() {
               {rules.map((r) => (
                 <li key={r.id} className={r.active ? '' : 'paused'}>
                   <button type="button" onClick={() => setEditing(r)}>
+                    <CatBadge name={catName.get(r.category_id) ?? 'Category'} />
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(r.category_id) ?? 'Category'}{r.note ? ` · ${r.note}` : ''}</span>
                       <span className="tx-note">

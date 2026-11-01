@@ -53,7 +53,7 @@ export function Screen({ title, hero, children }: { title?: ReactNode; hero?: Re
         {typeof title === 'string' ? <h1>{title}</h1> : title}
         {hero}
       </header>
-      <div className="body" style={gap ? { paddingTop: 28 + gap } : undefined}>
+      <div className="body" style={gap ? { paddingTop: 20 + gap } : undefined}>
         {(pull > 0 || busy) && (
           <span className={busy ? 'ptr busy' : 'ptr'} aria-hidden="true"
             style={busy ? undefined : { opacity: Math.min(1, pull / TRIGGER), transform: `rotate(${pull * 3}deg)` }}>

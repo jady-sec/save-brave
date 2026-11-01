@@ -4,18 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#111111" />
+    <meta name="theme-color" content="#f47b20" />
     <meta name="description" content="Spend together. Save together." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Save Brave" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" href="/icon-192.png" />
     <title>Save Brave</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="splash intro" role="status" aria-label="Loading Save Brave">
+        <svg viewBox="0 0 96 96" aria-hidden="true">
+          <circle class="coin-l" cx="39" cy="52" r="22" fill="#111" />
+          <circle class="coin-r" cx="63" cy="52" r="22" fill="#111" />
+          <circle class="coin-l" cx="36" cy="48" r="22" fill="#2fd2b9" stroke="#111" stroke-width="4" />
+          <circle class="coin-r" cx="60" cy="48" r="22" fill="#b98cff" stroke="#111" stroke-width="4" />
+          <path class="lens" d="M48 29.6a22 22 0 0 1 0 36.8a22 22 0 0 1 0-36.8z" fill="#fff" stroke="#111" stroke-width="4" />
+        </svg>
+        <p class="splash-name">Save Brave</p>
+        <p class="splash-tag">Spend together. Save together.</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

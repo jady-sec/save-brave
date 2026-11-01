@@ -8,15 +8,15 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png'],
-      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,svg}'] }, // woff2: Inter must work offline
+      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,svg}'] }, // woff2: the font must work offline
       manifest: {
         name: 'Save Brave',
         short_name: 'Save Brave',
         description: 'Spend together. Save together.',
         display: 'standalone',
         start_url: '/',
-        background_color: '#111111',
-        theme_color: '#111111',
+        background_color: '#f47b20',
+        theme_color: '#f47b20',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

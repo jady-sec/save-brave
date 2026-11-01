@@ -7,9 +7,9 @@ https://uxpilot.ai/mobile-design-templates/budget-planner-ui. The look below fol
 
 THESIS: Your month on one figure. Every screen answers "where do I stand" with the headline number first.
 
-OWN-WORLD: Monochrome iOS finance. Near-black header band (#111111) carrying the screen title and the headline figure in large white type. Below it, a white sheet with 32px rounded top corners and a small grab handle holds the content. Greys: #F3F4F6 fills, #E5E7EB rules, #1C1C1E ink. Inter type, tabular figures wherever money appears. Rounded 16px cards with a 1px grey border; round grey icon chips; black pill buttons; black is the active/selected colour.
+OWN-WORLD: Bold-outline pop (user reference, Nov 2026). Orange (#f47b20) header with rounded bottom corners carrying the title and the headline figure in black type. White page; cards, buttons, inputs and the floating pill nav all have a 2px #111 outline and a hard 3px 4px offset shadow (pressing moves the element into its shadow). Bright gradient stat tiles and coloured category squares are decoration; status keeps amber/red/green and purple for shared. Lexend type, tabular figures wherever money appears. Black text on every colour. Mark: a teal and a purple coin with hard shadows, the shared middle white, on orange.
 
-COLOUR: Monochrome by default. Colour appears only where it carries status: amber at 80% of a limit, red when over, green when a target is met, a quiet purple tag for shared items. Status always also has text.
+COLOUR: Orange header and buttons, bright decorative tiles and category squares. Status colour stays separate: amber at 80% of a limit, red when over, green when a target is met, a quiet purple tag for shared items. Status always also has text.
 
 STORY: Open → the month's saved figure in the header, then the budget cards in a two-column grid, alerts above them. "+" always one thumb away.
 

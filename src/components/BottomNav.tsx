@@ -8,20 +8,21 @@ const tabs: { to: string; label: string; icon: IconName }[] = [
   { to: '/more', label: 'More', icon: 'more' },
 ];
 
+/** Floating pill: the current tab grows into an orange pill with its label; the others show only their icon. */
 export function BottomNav({ onAdd }: { onAdd: () => void }) {
-  const link = (t: (typeof tabs)[number]) => (
-    <NavLink key={t.to} to={t.to} end>
-      <Icon name={t.icon} />
-      {t.label}
-    </NavLink>
-  );
   return (
     <nav className="nav" aria-label="Main">
-      {tabs.slice(0, 2).map(link)}
+      <div className="nav-pill">
+        {tabs.map((t) => (
+          <NavLink key={t.to} to={t.to} end>
+            <Icon name={t.icon} />
+            <span className="nav-label">{t.label}</span>
+          </NavLink>
+        ))}
+      </div>
       <button type="button" className="add" onClick={onAdd} aria-label="Add entry">
         <Icon name="plus" size={28} />
       </button>
-      {tabs.slice(2).map(link)}
     </nav>
   );
 }

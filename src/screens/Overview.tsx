@@ -1,3 +1,4 @@
+import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Alert } from '../components/Alert';
@@ -52,7 +53,11 @@ export function Overview() {
       <>
         <p className="hero-label">Saved this month</p>
         <p className={`hero-figure num ${status}`}>{formatCents(r.actualSavings)}</p>
-        {data!.mine && <p className="hero-sub num">Target {formatCents(r.plannedSavings)}</p>}
+        {data!.mine && <p className="hero-sub num">Target {formatCents(r.plannedSavings)}{status === 'met' ? ' · on track' : status === 'short' ? ' · below target' : ''}</p>}
+        <section className="totals" aria-label="Month totals">
+          <div><span>Total income</span><strong className="num">+{formatCents(r.income)}</strong></div>
+          <div><span>Total spending</span><strong className="num">−{formatCents(r.spent)}</strong></div>
+        </section>
       </>
     )}>
       {stale && <p className="notice-inline" role="status">Offline: showing the last loaded numbers.</p>}
@@ -72,10 +77,11 @@ export function Overview() {
             </div>
           )}
 
-          <section className="totals" aria-label="Month totals">
-            <div><span>Income</span><strong className="num">{formatCents(r.income)}</strong></div>
-            <div><span>Spent</span><strong className="num">{formatCents(r.spent)}</strong></div>
-          </section>
+          <ul className="tiles" aria-label="This month at a glance">
+            <li className="t0"><strong className="num">{data!.txs.length}</strong>Entries</li>
+            <li className="t1"><strong className="num">{rows.filter((x) => x.level === 'warn').length}</strong>Near limit</li>
+            <li className="t2"><strong className="num">{rows.filter((x) => x.level === 'over').length}</strong>Over limit</li>
+          </ul>
           {!data!.mine && <p className="muted">No plan yet. <Link to="/plan">Set income, a savings target and limits</Link>.</p>}
 
           <h2 className="section-title">Your budget</h2>
@@ -83,7 +89,7 @@ export function Overview() {
             <ul className="budget-grid">
               {rows.map((x) => (
                 <li key={x.category_id} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
-                  <span className="chip-icon" aria-hidden="true">{name(x.category_id).slice(0, 1).toUpperCase()}</span>
+                  <CatBadge name={name(x.category_id)} />
                   <span className="name">{name(x.category_id)}</span>
                   <span className="amt num">
                     <strong>{formatCents(x.spent)}</strong>{x.limit !== null && <> / {formatCents(x.limit)}</>}
