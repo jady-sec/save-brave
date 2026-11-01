@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { ensureDefaultCategories, friendlyError, getMe, listCategories, type Me } from './lib/api';
 import { cached } from './lib/cache';
+import { supabase } from './lib/supabase';
 import type { Category, Tx } from './lib/types';
 
 interface MeState {
@@ -42,7 +43,20 @@ export function MeProvider({ user, openEntry, children }: { user: { id: string; 
     // Picks up the partner joining (or any other device's change) when the app comes back to the foreground.
     const onVisible = () => { if (document.visibilityState === 'visible') { refresh(); changed(); } };
     document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    // Live updates (migration 0011): any change the database lets this person see reloads the screens. A save
+    // touches several rows at once, so wait for the burst to settle.
+    let timer = 0;
+    const channel = supabase.channel('changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        clearTimeout(timer);
+        timer = window.setTimeout(() => { refresh(); changed(); }, 500);
+      })
+      .subscribe();
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
   }, [refresh, changed]);
 
   return <Ctx.Provider value={{ me, categories, error, stale, refresh, version, changed, openEntry }}>{children}</Ctx.Provider>;
