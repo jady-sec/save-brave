@@ -1,0 +1,9 @@
+<!-- Source for badge-96.png: the Save Brave jar as one white shape. Android uses only the alpha channel of a
+     notification badge, so the lid gap and coins are transparent cut-outs. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <rect x="26" y="8" width="44" height="14" rx="5" fill="#fff"/>
+  <path fill="#fff" fill-rule="evenodd" d="M34 28h28a16 16 0 0 1 16 16v28a16 16 0 0 1-16 16H34a16 16 0 0 1-16-16V44a16 16 0 0 1 16-16z
+    M36 59a9 9 0 1 0 0 18 9 9 0 0 0 0-18z
+    M60 59a9 9 0 1 0 0 18 9 9 0 0 0 0-18z
+    M48 38a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/>
+</svg>

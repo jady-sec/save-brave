@@ -6,7 +6,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(data.title || 'Save Brave', {
     body: data.body || '',
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    badge: '/icons/badge-96.png', // Android uses only its alpha channel, so an opaque icon shows as a white square
     data: { url: data.url || '/' },
   }));
 });
