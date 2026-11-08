@@ -59,10 +59,16 @@ export function Balance() {
   async function settle(e: FormEvent) {
     e.preventDefault();
     if (!cents) { setError('Enter the amount you paid.'); return; }
-    if (cents > -balance!) { setError(`That's more than you owe (${formatCents(-balance!)}).`); return; }
+    const theyPay = balance! > 0; // the admin recording the partner's payment to them
+    if (cents > Math.abs(balance!)) { setError(theyPay ? `That's more than ${name} owes (${formatCents(balance!)}).` : `That's more than you owe (${formatCents(-balance!)}).`); return; }
     setBusy(true); setError(null);
     // Clear the prefill so a second tap before the refetch can't record the same payment again.
-    try { notifyPartner({ settlement_id: await addSettlement(me!, partner!.user_id, cents, todayLocal()) }); haptic(); setAmount(''); changed(); }
+    try {
+      const id = theyPay
+        ? await addSettlement(me!, me!.userId, cents, todayLocal(), partner!.user_id)
+        : await addSettlement(me!, partner!.user_id, cents, todayLocal());
+      notifyPartner({ settlement_id: id }); haptic(); setAmount(''); changed();
+    }
     catch (err) { setError(`Not recorded. ${friendlyError((err as Error).message)}`); }
     setBusy(false);
   }
@@ -87,17 +93,17 @@ export function Balance() {
       {error && <p className="error" role="alert">{error}</p>}
       {balance === null ? (!error && <p className="muted">Loading…</p>) : (
         <>
-          {balance < 0 && (
+          {(balance < 0 || (balance > 0 && me!.isAdmin)) && (
             <form className="stack settle" onSubmit={settle}>
               <label className="field">
-                <span>Amount you paid {name}</span>
+                <span>{balance < 0 ? `Amount you paid ${name}` : `Amount ${name} paid you`}</span>
                 <input className="num" inputMode="decimal" autoComplete="off" value={amount} onChange={(e) => setAmount(e.target.value)} />
               </label>
-              <button className="btn primary" disabled={busy || stale}>{busy ? 'Recording…' : `Record ${cents ? formatCents(cents) : 'payment'} to ${name}`}</button>
+              <button className="btn primary" disabled={busy || stale}>{busy ? 'Recording…' : balance < 0 ? `Record ${cents ? formatCents(cents) : 'payment'} to ${name}` : `Record ${name}'s ${cents ? `${formatCents(cents)} ` : ''}payment`}</button>
             </form>
           )}
-          {/* shortcut: only the person paying records a settle-up (enforced by RLS); relax if that gets annoying. */}
-          {balance > 0 && <p className="muted">When {name} pays you back, they record it on their phone.</p>}
+          {/* Only the payer, or the household admin for payments to them, can record one (RLS, migration 0016). */}
+          {balance > 0 && !me!.isAdmin && <p className="muted">When {name} pays you back, they record it on their phone.</p>}
 
           <h2 className="section-title">Shared activity</h2>
           {activity.length === 0 ? <p className="empty muted">No shared entries yet.</p> : (

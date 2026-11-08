@@ -149,9 +149,10 @@ describe('writes are confined the same way', () => {
       values ($1,$2,$3,100,'2026-10-01',$2)`, [H1, C, A])).rejects.toThrow();
     await expect(asUser(db, C, `insert into categories (scope, type, name, household_id) values ('shared','expense','x',$1)`, [H1])).rejects.toThrow();
   });
-  test("a member cannot record a settlement on the partner's behalf", async () => {
-    await expect(asUser(db, A, `insert into settlements (household_id, from_user, to_user, amount_cents, date, created_by)
-      values ($1,$2,$3,100,'2026-10-01',$3)`, [H1, B, A])).rejects.toThrow();
+  test("a member who isn't the admin cannot record a settlement on the partner's behalf", async () => {
+    // A created H1, so only A may record B's payments (0016); B can't record A's.
+    await expect(asUser(db, B, `insert into settlements (household_id, from_user, to_user, amount_cents, date, created_by)
+      values ($1,$2,$3,100,'2026-10-01',$3)`, [H1, A, B])).rejects.toThrow();
   });
 });
 

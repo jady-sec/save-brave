@@ -16,6 +16,8 @@ const DESC = { ascending: false };
 export interface Member { user_id: string; email: string; display_name?: string | null; avatar?: AvatarKey | null; tone?: number | null }
 export interface Me {
   userId: string; email: string; householdId: string | null; householdName: string | null; members: Member[];
+  /** Created the household: may also record the partner's payments to them (migration 0016). */
+  isAdmin?: boolean;
   profile: Profile | null;
 }
 
@@ -39,10 +41,10 @@ export function friendlyError(msg: string): string {
 
 // The user comes from the local session, so this works without a round trip to the auth server.
 export async function getMe(user: { id: string; email?: string }): Promise<Me> {
-  const hh = must(await supabase.from('households').select('id, name').maybeSingle());
+  const hh = must(await supabase.from('households').select('id, name, created_by').maybeSingle());
   const members = hh ? must(await supabase.rpc('household_members_view')) as Member[] : [];
   const profile = must(await supabase.from('profiles').select('display_name, avatar, tone').eq('user_id', user.id).maybeSingle()) as Profile | null;
-  return { userId: user.id, email: user.email ?? '', householdId: hh?.id ?? null, householdName: hh?.name ?? null, members, profile };
+  return { userId: user.id, email: user.email ?? '', householdId: hh?.id ?? null, householdName: hh?.name ?? null, members, profile, isAdmin: hh?.created_by === user.id };
 }
 
 export async function saveProfile(userId: string, p: Profile): Promise<void> {
@@ -141,14 +143,16 @@ export async function listSettlements(): Promise<Settlement[]> {
 }
 
 // RLS only accepts a settlement recorded by the person paying (from_user = caller).
-export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string): Promise<string> {
-  return must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user: me.userId, to_user, amount_cents, date, created_by: me.userId }).select('id').single())!.id;
+/** from_user defaults to me; the household admin may record the partner's payment to them instead. */
+export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string, from_user = me.userId): Promise<string> {
+  return must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user, to_user, amount_cents, date, created_by: me.userId }).select('id').single())!.id;
 }
 
-/** Pay my share of one shared expense to whoever paid it. The database checks the amount and allows it once. */
-export async function settleExpense(me: Me, t: Tx): Promise<string> {
-  const share = t.splits.find((s) => s.user_id === me.userId)?.share_cents ?? 0;
-  return must(await supabase.from('settlements').insert({ household_id: t.household_id, from_user: me.userId, to_user: t.paid_by,
+/** Pay `from`'s share of one shared expense to whoever paid it (from = me, or the partner when the admin records
+ *  it). The database checks the amount and allows it once. */
+export async function settleExpense(me: Me, t: Tx, from = me.userId): Promise<string> {
+  const share = t.splits.find((s) => s.user_id === from)?.share_cents ?? 0;
+  return must(await supabase.from('settlements').insert({ household_id: t.household_id, from_user: from, to_user: t.paid_by,
     amount_cents: share, date: todayLocal(), created_by: me.userId, transaction_id: t.id }).select('id').single())!.id;
 }
 

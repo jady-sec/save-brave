@@ -322,7 +322,10 @@ export function Settings() {
       <section className="stack section">
         <h2>Household</h2>
         {me.householdId ? (
-          <p>{me.householdName} · {partner ? `with ${displayName(partner)}` : 'waiting for your partner'}</p>
+          <>
+            <p>{me.householdName} · {partner ? `with ${displayName(partner)}` : 'waiting for your partner'}</p>
+            {partner && <p className="muted">{me.isAdmin ? `You're the household admin: you can also record ${displayName(partner)}'s payments to you.` : `${displayName(partner)} is the household admin.`}</p>}
+          </>
         ) : (
           <p className="muted">Not set up yet.</p>
         )}

@@ -38,9 +38,12 @@ Deno.serve(async (req) => {
       body = `${name} added ${category} ${money(t.amount_cents)} (shared). Your share: ${money(theirs)}.`;
       url = '/tx';
     } else if (settlement_id) {
-      const { data: s } = await db.from('settlements').select('amount_cents, created_by').eq('id', settlement_id).maybeSingle();
+      const { data: s } = await db.from('settlements').select('amount_cents, created_by, from_user').eq('id', settlement_id).maybeSingle();
       if (!s || s.created_by !== user.id) return json({ sent: 0 });
-      body = `${name} recorded paying you ${money(s.amount_cents)}.`;
+      // The household admin can record the partner's payment to them (migration 0016).
+      body = s.from_user === user.id
+        ? `${name} recorded paying you ${money(s.amount_cents)}.`
+        : `${name} recorded that you paid them ${money(s.amount_cents)}.`;
       url = '/balance';
     } else {
       return json({ error: 'nothing to send' }, 400);

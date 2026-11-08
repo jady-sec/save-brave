@@ -156,9 +156,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     }
   }
 
-  async function settleMine() {
+  async function settleShare(from = myId) {
     setBusy(true); setError(null);
-    try { notifyPartner({ settlement_id: await settleExpense(me!, editing!) }); haptic(); changed(); onClose(); }
+    try { notifyPartner({ settlement_id: await settleExpense(me!, editing!, from) }); haptic(); changed(); onClose(); }
     catch (err) { setError(`Not settled. ${friendlyError((err as Error).message)}`); setBusy(false); }
   }
   async function undoSettle() {
@@ -273,9 +273,13 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
             </div>
           );
           if (editing.paid_by !== myId) return myShare > 0 && (
-            <button type="button" className="btn settle" onClick={settleMine} disabled={busy}>Settle my share · {formatCents(myShare)} to {them}</button>
+            <button type="button" className="btn settle" onClick={() => settleShare()} disabled={busy}>Settle my share · {formatCents(myShare)} to {them}</button>
           );
-          return theirShare > 0 && <p className="settle-box muted">{them} owes you {formatCents(theirShare)} for this. They can settle it from their phone.</p>;
+          if (theirShare <= 0) return null;
+          // The household admin can record the partner's payment for this expense (migration 0016).
+          return me!.isAdmin
+            ? <button type="button" className="btn settle" onClick={() => settleShare(partner.user_id)} disabled={busy}>Record {them}'s payment · {formatCents(theirShare)}</button>
+            : <p className="settle-box muted">{them} owes you {formatCents(theirShare)} for this. They can settle it from their phone.</p>;
         })()}
         {editing && <button type="button" className="btn danger" onClick={remove} disabled={busy}>Delete entry</button>}
       </form>
