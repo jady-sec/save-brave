@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CatBadge } from '../components/CatBadge';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
-import { friendlyError, listForExport, listTransactions } from '../lib/api';
+import { friendlyError, listForExport, listSettlements, listTransactions } from '../lib/api';
 import { cached } from '../lib/cache';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
@@ -58,7 +58,17 @@ export function Transactions() {
       .catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };
   }, [me, searchingAll, version]);
-  useEffect(() => { setRows(null); setStale(false); }, [month]); // don't show last month's entries under this month's title
+  useEffect(() => { setRows(null); setStale(false); }, [month]);
+  // Which shared expenses have been settled one by one, for the ✓ Settled tag.
+  const [settledIds, setSettledIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!me?.householdId) return;
+    let live = true;
+    cached(`${me.userId}:settlements`, listSettlements)
+      .then((r) => { if (live) setSettledIds(new Set(r.data.flatMap((s) => (s.transaction_id ? [s.transaction_id] : [])))); })
+      .catch(() => { /* tags are a nicety */ });
+    return () => { live = false; };
+  }, [me?.userId, me?.householdId, version]); // eslint-disable-line react-hooks/exhaustive-deps // don't show last month's entries under this month's title
 
   const catName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
   const source = searchingAll ? all : rows;
@@ -118,6 +128,7 @@ export function Transactions() {
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(t.category_id) ?? 'Category'}</span>
                       {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : `${(partnerOf(me) ? displayName(partnerOf(me)!) : 'partner')} paid`}</span>}
+                      {settledIds.has(t.id) && <span className="tag settled">✓ Settled</span>}
                       {t.note && <span className="tx-note">{t.note}</span>}
                     </span>
                     <span className={`tx-amt num ${t.type}`}>

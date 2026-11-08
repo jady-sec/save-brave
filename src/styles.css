@@ -525,3 +525,9 @@ html.sheet-open, html.sheet-open body { overflow: hidden; }
 .up-amt { font-weight: 700; }
 :root[data-theme='dark'] .segmented.scope button.shared[aria-pressed='true'] { color: var(--on-color); } /* light lavender in dark mode */
 .hero-actions { display: flex; gap: 10px; }
+
+/* Entry sheet: settle one shared expense */
+.btn.settle { min-height: 52px; background: var(--tone-0); color: var(--on-color); }
+.settle-box { margin: 0; padding: 10px 12px; border: var(--line); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.92rem; }
+.settle-box.done { background: var(--bg-ok); font-weight: 600; }
+.tag.settled { justify-self: start; font-size: 0.78rem; font-weight: 600; color: var(--ok); }

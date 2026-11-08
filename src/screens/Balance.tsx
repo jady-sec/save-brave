@@ -109,6 +109,7 @@ export function Balance() {
                     <span className="tx-main">
                       <span className="tx-cat">{catName.get(a.t.category_id) ?? 'Category'}</span>
                       <span className="tx-note">{dayLabel(a.date)} · {a.t.paid_by === me.userId ? 'you paid' : `${name} paid`}{a.t.note ? ` · ${a.t.note}` : ''}</span>
+                      {data!.settlements.some((s) => s.transaction_id === a.t.id) && <span className="tag settled">✓ Settled</span>}
                     </span>
                     <span className="tx-amt num">{formatCents(a.t.amount_cents)}
                       <span className="tx-share">your share {formatCents(a.t.splits.find((s) => s.user_id === me.userId)?.share_cents ?? 0)}</span>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { haptic } from '../components/Celebration';
 import { SplitEditor } from '../components/SplitEditor';
-import { deleteTransaction, friendlyError, listTransactionsRange, saveTransaction } from '../lib/api';
+import { deleteSettlement, deleteTransaction, friendlyError, listTransactionsRange, saveTransaction, settleExpense, settlementFor } from '../lib/api';
 import { cached } from '../lib/cache';
 import { frequentEntries, type Frequent } from '../lib/frequent';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
@@ -9,7 +9,7 @@ import { displayName } from '../lib/profile';
 import { notifyPartner } from '../lib/push';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
-import type { Scope, Split, Tx, TxType } from '../lib/types';
+import type { Scope, Settlement, Split, Tx, TxType } from '../lib/types';
 import { partnerOf, useMe } from '../me';
 
 const lastCatKey = (type: TxType, scope: Scope) => `cache:lastCategory:${type}:${scope}`; // cache: prefix so sign-out clears it
@@ -43,6 +43,14 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [repeats, setRepeats] = useState<Frequent[]>([]);
+  // A shared entry may already be settled on its own (migration 0015): undefined while loading.
+  const [settled, setSettled] = useState<Settlement | null | undefined>(editing?.scope === 'shared' ? undefined : null);
+  useEffect(() => {
+    if (editing?.scope !== 'shared') return;
+    let live = true;
+    settlementFor(editing.id).then((s) => { if (live) setSettled(s); }).catch(() => { if (live) setSettled(null); });
+    return () => { live = false; };
+  }, [editing]);
 
   // Repeat chips: your most frequent entries from the last 3 months (from the offline copy when there's no signal).
   useEffect(() => {
@@ -127,6 +135,11 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     if (!cents) { setError('Enter an amount first.'); amountRef.current?.focus(); return; }
     if (!selected) { setError(choices.length ? 'Pick a category.' : `Add a ${shared ? 'shared ' : ''}${type} category in Settings first.`); return; }
     if (shared && !splits) { setError(splitError ?? 'Enter your share.'); return; }
+    // The payment was for the old amounts; changing them would leave it not matching the expense.
+    if (settled && editing && (cents !== editing.amount_cents || paidBy !== editing.paid_by
+      || share(settled.from_user) !== editing.splits.find((x) => x.user_id === settled.from_user)?.share_cents)) {
+      setError('This expense is settled. Undo the settlement below before changing the amount, split or who paid.'); return;
+    }
     setBusy(true); setError(null);
     try {
       const id = await saveTransaction({ id: editing?.id, type, scope, amount_cents: cents, date, category_id: selected.id, note,
@@ -141,6 +154,19 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
       setError(`Not saved. ${friendlyError((err as Error).message)}`);
       setBusy(false);
     }
+  }
+
+  async function settleMine() {
+    setBusy(true); setError(null);
+    try { notifyPartner({ settlement_id: await settleExpense(me!, editing!) }); haptic(); changed(); onClose(); }
+    catch (err) { setError(`Not settled. ${friendlyError((err as Error).message)}`); setBusy(false); }
+  }
+  async function undoSettle() {
+    if (!settled || !confirm('Undo this settlement? The amount goes back on the balance.')) return;
+    setBusy(true); setError(null);
+    try { await deleteSettlement(settled.id); setSettled(null); changed(); }
+    catch (err) { setError(`Not undone. ${friendlyError((err as Error).message)}`); }
+    setBusy(false);
   }
 
   async function remove() {
@@ -236,6 +262,21 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
         <button className="btn primary save" disabled={busy}>
           {busy ? 'Saving…' : cents ? `Save ${formatCents(cents)}` : 'Save'}
         </button>
+        {editing?.scope === 'shared' && partner && settled !== undefined && (() => {
+          const myShare = editing.splits.find((x) => x.user_id === myId)?.share_cents ?? 0;
+          const theirShare = editing.splits.find((x) => x.user_id === partner.user_id)?.share_cents ?? 0;
+          const them = displayName(partner);
+          if (settled) return (
+            <div className="settle-box done" role="status">
+              <span>✓ Settled: {settled.from_user === myId ? 'you' : them} paid {formatCents(settled.amount_cents)} on {settled.date}</span>
+              <button type="button" className="btn small" onClick={undoSettle} disabled={busy}>Undo</button>
+            </div>
+          );
+          if (editing.paid_by !== myId) return myShare > 0 && (
+            <button type="button" className="btn settle" onClick={settleMine} disabled={busy}>Settle my share · {formatCents(myShare)} to {them}</button>
+          );
+          return theirShare > 0 && <p className="settle-box muted">{them} owes you {formatCents(theirShare)} for this. They can settle it from their phone.</p>;
+        })()}
         {editing && <button type="button" className="btn danger" onClick={remove} disabled={busy}>Delete entry</button>}
       </form>
     </dialog>

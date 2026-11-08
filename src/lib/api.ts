@@ -32,6 +32,7 @@ export function friendlyError(msg: string): string {
   if (/already in a household/.test(msg)) return 'You are already in a household.';
   if (/categories_(owner|household)_name/.test(msg)) return 'You already have a category with that name.';
   if (/transactions_rule_date/.test(msg)) return 'This recurring item already has an entry on that date.';
+  if (/settlements_one_per_expense/.test(msg)) return 'This expense is already settled.';
   if (/foreign key/.test(msg)) return 'This category is used by entries or recurring items, so it can’t be deleted.';
   return msg;
 }
@@ -142,6 +143,17 @@ export async function listSettlements(): Promise<Settlement[]> {
 // RLS only accepts a settlement recorded by the person paying (from_user = caller).
 export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string): Promise<string> {
   return must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user: me.userId, to_user, amount_cents, date, created_by: me.userId }).select('id').single())!.id;
+}
+
+/** Pay my share of one shared expense to whoever paid it. The database checks the amount and allows it once. */
+export async function settleExpense(me: Me, t: Tx): Promise<string> {
+  const share = t.splits.find((s) => s.user_id === me.userId)?.share_cents ?? 0;
+  return must(await supabase.from('settlements').insert({ household_id: t.household_id, from_user: me.userId, to_user: t.paid_by,
+    amount_cents: share, date: todayLocal(), created_by: me.userId, transaction_id: t.id }).select('id').single())!.id;
+}
+
+export async function settlementFor(transactionId: string): Promise<Settlement | null> {
+  return must(await supabase.from('settlements').select('*').eq('transaction_id', transactionId).maybeSingle()) as Settlement | null;
 }
 
 export async function deleteSettlement(id: string): Promise<void> {
