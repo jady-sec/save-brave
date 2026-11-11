@@ -8,6 +8,7 @@ import { Screen } from '../components/Screen';
 import { friendlyError, getPlan, listRecurring, listTransactions, listTransactionsRange } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
+import { overlayTx, readOutbox } from '../lib/outbox';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { dayStreak } from '../lib/streak';
@@ -41,7 +42,7 @@ export function Overview() {
       cached(`${k}tx:${month}`, () => listTransactions(month)),
       cached(`${k}plan:me:${month}`, () => getPlan('me', month)),
       me.householdId ? cached(`${k}plan:household:${month}`, () => getPlan('household', month)) : Promise.resolve({ data: null, stale: false }),
-    ]).then(([t, p, h]) => { if (live) { setData({ txs: t.data, mine: p.data, home: h.data }); setStale(t.stale || p.stale || h.stale); } })
+    ]).then(([t, p, h]) => { if (live) { setData({ txs: overlayTx(t.data, readOutbox(me.userId), me, { from: month, to: month }), mine: p.data, home: h.data }); setStale(t.stale || p.stale || h.stale); } })
       .catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };
   }, [me, month, version]);

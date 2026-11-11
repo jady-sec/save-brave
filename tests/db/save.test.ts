@@ -129,3 +129,18 @@ describe('recurring generation advances its rule in the same transaction', () =>
     expect(await last()).toBe('2026-10-01');
   });
 });
+
+describe('save_transaction: entries made offline (migration 0017)', () => {
+  const ID = '6f1c1d5e-0b7a-4c1e-9d2a-3b4c5d6e7f80';
+  test('a new entry keeps the id the phone gave it', async () => {
+    expect(await save(A, sharedTx({ new_id: ID }))).toBe(ID);
+    expect(await one(ID)).toMatchObject({ created_by: A, household_id: H });
+    expect(await splits(ID)).toHaveLength(2);
+  });
+  test('sending it again is refused, so a lost reply never makes a duplicate', async () => {
+    await save(A, sharedTx({ new_id: ID }));
+    await expect(save(A, sharedTx({ new_id: ID }))).rejects.toThrow(/duplicate key/);
+    expect(await splits(ID)).toHaveLength(2);
+    expect((await db.query('select 1 from transactions')).rows).toHaveLength(1);
+  });
+});

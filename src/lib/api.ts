@@ -1,5 +1,7 @@
 // Every database call the UI makes. Errors surface as thrown Error with a user-facing message.
 import { isNetworkError } from './cache';
+import type { Op, SettlementRow } from './outbox';
+import { notifyPartner } from './push';
 import { fetchAll } from './paging';
 import { monthBounds, todayLocal } from './month';
 import { supabase } from './supabase';
@@ -113,7 +115,7 @@ export async function deleteCategory(id: string): Promise<void> {
 // ---- transactions ----
 
 export interface TxInput {
-  id?: string; type: TxType; scope: Scope; amount_cents: number; date: string; category_id: string;
+  id?: string; /** a new entry's id made on the phone (migration 0017) */ new_id?: string; type: TxType; scope: Scope; amount_cents: number; date: string; category_id: string;
   note?: string | null; paid_by?: string; splits?: Split[]; recurring_rule_id?: string;
 }
 
@@ -142,22 +144,28 @@ export async function listSettlements(): Promise<Settlement[]> {
     .order('date', DESC).order('created_at', DESC).order('id').range(a, b));
 }
 
-// RLS only accepts a settlement recorded by the person paying (from_user = caller).
-/** from_user defaults to me; the household admin may record the partner's payment to them instead. */
-export async function addSettlement(me: Me, to_user: string, amount_cents: number, date: string, from_user = me.userId): Promise<string> {
-  return must(await supabase.from('settlements').insert({ household_id: me.householdId, from_user, to_user, amount_cents, date, created_by: me.userId }).select('id').single())!.id;
-}
+// RLS accepts a settlement recorded by the person paying, or by the household admin for a payment to them (0016).
+export const settleUpRow = (me: Me, to_user: string, amount_cents: number, from_user = me.userId): SettlementRow => ({
+  id: crypto.randomUUID(), household_id: me.householdId!, from_user, to_user, amount_cents, date: todayLocal(), created_by: me.userId, transaction_id: null,
+});
 
-/** Pay `from`'s share of one shared expense to whoever paid it (from = me, or the partner when the admin records
- *  it). The database checks the amount and allows it once. */
-export async function settleExpense(me: Me, t: Tx, from = me.userId): Promise<string> {
-  const share = t.splits.find((s) => s.user_id === from)?.share_cents ?? 0;
-  return must(await supabase.from('settlements').insert({ household_id: t.household_id, from_user: from, to_user: t.paid_by,
-    amount_cents: share, date: todayLocal(), created_by: me.userId, transaction_id: t.id }).select('id').single())!.id;
-}
+/** `from`'s share of one shared expense, paid to whoever paid it. The database checks the amount and allows it once (0015). */
+export const settleExpenseRow = (me: Me, t: Tx, from = me.userId): SettlementRow => ({
+  ...settleUpRow(me, t.paid_by, t.splits.find((s) => s.user_id === from)?.share_cents ?? 0, from), household_id: t.household_id!, transaction_id: t.id,
+});
 
-export async function settlementFor(transactionId: string): Promise<Settlement | null> {
-  return must(await supabase.from('settlements').select('*').eq('transaction_id', transactionId).maybeSingle()) as Settlement | null;
+/** Sends one change (see outbox.ts), then tells the partner about new shared entries and settle-ups. A duplicate-key
+ *  refusal for a row that is already there means an earlier send got through and only the reply was lost. */
+export async function sendOp(op: Op): Promise<void> {
+  try {
+    if (op.kind === 'tx') await saveTransaction(op.create ? { ...op.input, id: undefined, new_id: op.id } : { ...op.input, id: op.id });
+    else must(await supabase.from('settlements').insert(op.row));
+  } catch (e) {
+    const table = op.kind === 'tx' ? 'transactions' : 'settlements';
+    if (!/duplicate key/.test((e as Error).message) || !must(await supabase.from(table).select('id').eq('id', op.id).maybeSingle())) throw e;
+  }
+  if (op.kind === 'settle') notifyPartner({ settlement_id: op.id });
+  else if (op.create && op.input.scope === 'shared') notifyPartner({ transaction_id: op.id });
 }
 
 export async function deleteSettlement(id: string): Promise<void> {

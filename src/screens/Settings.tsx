@@ -7,6 +7,7 @@ import { deleteCategory, friendlyError, fullBackup, listForExport, saveCategory,
 import { AVATARS, TONES, cleanName, displayName, type AvatarKey } from '../lib/profile';
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push';
 import { clearCache } from '../lib/cache';
+import { clearOutbox, readOutbox } from '../lib/outbox';
 import { CATEGORY_ICONS, iconFor, type CategoryIcon } from '../lib/categoryIcons';
 import { toCsv } from '../lib/csv';
 import { exportRows } from '../lib/export';
@@ -336,7 +337,10 @@ export function Settings() {
       <section className="stack section">
         <h2>Account</h2>
         <p className="muted">Signed in as {me.email}</p>
-        <button type="button" className="btn" onClick={async () => { setPendingJoin(null); clearCache(); await disablePush().catch(() => {}); supabase.auth.signOut(); }}>Sign out</button>
+        <button type="button" className="btn" onClick={async () => {
+          const n = readOutbox(me.userId).length;
+          if (n && !confirm(`${n} ${n === 1 ? 'change' : 'changes'} made offline haven't synced yet and will be lost. Sign out anyway?`)) return;
+          clearOutbox(me.userId); setPendingJoin(null); clearCache(); await disablePush().catch(() => {}); supabase.auth.signOut(); }}>Sign out</button>
       </section>
     </Screen>
   );

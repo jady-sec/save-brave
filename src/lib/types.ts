@@ -7,9 +7,11 @@ export interface Split { user_id: string; share_cents: number }
 export interface Tx {
   id: string; type: TxType; scope: Scope; household_id: string | null; paid_by: string; created_by: string;
   amount_cents: number; date: string; category_id: string; note: string | null; recurring_rule_id: string | null; splits: Split[];
+  /** made offline, not synced yet */
+  pending?: boolean;
 }
 /** transaction_id: the one shared expense this payment settled (migration 0015), or null for a general settle-up. */
-export interface Settlement { id: string; household_id: string; from_user: string; to_user: string; amount_cents: number; date: string; transaction_id?: string | null }
+export interface Settlement { id: string; household_id: string; from_user: string; to_user: string; amount_cents: number; date: string; transaction_id?: string | null; pending?: boolean }
 export interface Plan {
   id: string; user_id: string | null; household_id: string | null; month: string;
   expected_income_cents: number; savings_target_cents: number; limits: { category_id: string; limit_cents: number }[];

@@ -1,25 +1,24 @@
 import { Avatar } from '../components/Avatar';
 import { haptic } from '../components/Celebration';
 import { displayName } from '../lib/profile';
-import { notifyPartner } from '../lib/push';
 import { CatBadge } from '../components/CatBadge';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Screen } from '../components/Screen';
-import { addSettlement, deleteSettlement, friendlyError, listSettlements, listShared } from '../lib/api';
+import { deleteSettlement, friendlyError, listSettlements, listShared, sendOp, settleUpRow } from '../lib/api';
 import { computeBalance } from '../lib/balance';
 import { cached } from '../lib/cache';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
-import { todayLocal } from '../lib/month';
+import { dropFromOutbox, overlaySettlements, overlayTx, submit } from '../lib/outbox';
 import type { Settlement, Tx } from '../lib/types';
 import { partnerOf, useMe } from '../me';
 
 const dayLabel = (d: string) => new Date(`${d}T12:00`).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export function Balance() {
-  const { me, categories, version, changed, openEntry } = useMe();
+  const { me, categories, version, changed, openEntry, outbox } = useMe();
   const partner = me ? partnerOf(me) : null;
-  const [data, setData] = useState<{ shared: Tx[]; settlements: Settlement[] } | null>(null);
+  const [loaded, setLoaded] = useState<{ shared: Tx[]; settlements: Settlement[] } | null>(null);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState('');
@@ -30,11 +29,16 @@ export function Balance() {
     let live = true;
     setError(null);
     Promise.all([cached(`${me.userId}:shared`, listShared), cached(`${me.userId}:settlements`, listSettlements)])
-      .then(([s, st]) => { if (live) { setData({ shared: s.data, settlements: st.data }); setStale(s.stale || st.stale); } })
+      .then(([s, st]) => { if (live) { setLoaded({ shared: s.data, settlements: st.data }); setStale(s.stale || st.stale); } })
       .catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };
   }, [me, partner, version]);
 
+  // Plus what was saved offline and hasn't synced yet.
+  const data = useMemo(() => loaded && me ? {
+    shared: overlayTx(loaded.shared, outbox, me, {}).filter((t) => t.scope === 'shared'),
+    settlements: overlaySettlements(loaded.settlements, outbox),
+  } : null, [loaded, outbox, me]);
   const balance = data && me ? computeBalance(me.userId, data.shared, data.settlements) : null;
   useEffect(() => { if (balance !== null && balance < 0) setAmount(centsToPlain(-balance)); }, [balance]);
 
@@ -64,18 +68,17 @@ export function Balance() {
     setBusy(true); setError(null);
     // Clear the prefill so a second tap before the refetch can't record the same payment again.
     try {
-      const id = theyPay
-        ? await addSettlement(me!, me!.userId, cents, todayLocal(), partner!.user_id)
-        : await addSettlement(me!, partner!.user_id, cents, todayLocal());
-      notifyPartner({ settlement_id: id }); haptic(); setAmount(''); changed();
+      const row = theyPay ? settleUpRow(me!, me!.userId, cents, partner!.user_id) : settleUpRow(me!, partner!.user_id, cents);
+      await submit(me!.userId, { kind: 'settle', id: row.id, row }, sendOp); // offline it waits and syncs later
+      haptic(); setAmount(''); changed();
     }
     catch (err) { setError(`Not recorded. ${friendlyError((err as Error).message)}`); }
     setBusy(false);
   }
 
-  async function undo(id: string) {
+  async function undo(s: Settlement) {
     if (!confirm('Delete this settle-up payment?')) return;
-    try { await deleteSettlement(id); changed(); }
+    try { if (s.pending) dropFromOutbox(me!.userId, s.id); else await deleteSettlement(s.id); changed(); }
     catch (err) { setError(`Not deleted. ${friendlyError((err as Error).message)}`); }
   }
 
@@ -89,7 +92,7 @@ export function Balance() {
             <p className="hero-figure num">{formatCents(Math.abs(balance))}</p>
           </>)}
     </>}>
-      {stale && <p className="notice-inline" role="status">Offline: showing the last loaded balance. Settling up needs a connection.</p>}
+      {stale && <p className="notice-inline" role="status">Offline: showing the last loaded balance. A settle-up you record now syncs when you're back online.</p>}
       {error && <p className="error" role="alert">{error}</p>}
       {balance === null ? (!error && <p className="muted">Loading…</p>) : (
         <>
@@ -99,7 +102,7 @@ export function Balance() {
                 <span>{balance < 0 ? `Amount you paid ${name}` : `Amount ${name} paid you`}</span>
                 <input className="num" inputMode="decimal" autoComplete="off" value={amount} onChange={(e) => setAmount(e.target.value)} />
               </label>
-              <button className="btn primary" disabled={busy || stale}>{busy ? 'Recording…' : balance < 0 ? `Record ${cents ? formatCents(cents) : 'payment'} to ${name}` : `Record ${name}'s ${cents ? `${formatCents(cents)} ` : ''}payment`}</button>
+              <button className="btn primary" disabled={busy}>{busy ? 'Recording…' : balance < 0 ? `Record ${cents ? formatCents(cents) : 'payment'} to ${name}` : `Record ${name}'s ${cents ? `${formatCents(cents)} ` : ''}payment`}</button>
             </form>
           )}
           {/* Only the payer, or the household admin for payments to them, can record one (RLS, migration 0016). */}
@@ -116,6 +119,7 @@ export function Balance() {
                       <span className="tx-cat">{catName.get(a.t.category_id) ?? 'Category'}</span>
                       <span className="tx-note">{dayLabel(a.date)} · {a.t.paid_by === me.userId ? 'you paid' : `${name} paid`}{a.t.note ? ` · ${a.t.note}` : ''}</span>
                       {data!.settlements.some((s) => s.transaction_id === a.t.id) && <span className="tag settled">✓ Settled</span>}
+                      {a.t.pending && <span className="tag pending">Waiting to sync</span>}
                     </span>
                     <span className="tx-amt num">{formatCents(a.t.amount_cents)}
                       <span className="tx-share">your share {formatCents(a.t.splits.find((s) => s.user_id === me.userId)?.share_cents ?? 0)}</span>
@@ -124,10 +128,10 @@ export function Balance() {
                 </li>
               ) : (
                 <li key={`s${a.s.id}`}>
-                  <button type="button" onClick={() => undo(a.s.id)} aria-label={`Settle-up payment, ${formatCents(a.s.amount_cents)}. Tap to delete.`}>
+                  <button type="button" onClick={() => undo(a.s)} aria-label={`Settle-up payment, ${formatCents(a.s.amount_cents)}. Tap to delete.`}>
                     <span className="tx-main">
                       <span className="tx-cat">{a.s.from_user === me.userId ? `You paid ${name}` : `${name} paid you`}</span>
-                      <span className="tx-note">{dayLabel(a.date)} · settle up</span>
+                      <span className="tx-note">{dayLabel(a.date)} · settle up{a.s.pending ? ' · waiting to sync' : ''}</span>
                     </span>
                     <span className="tx-amt num ok">{formatCents(a.s.amount_cents)}</span>
                   </button>

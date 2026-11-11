@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
 import { friendlyError, listForExport, listSettlements, listTransactions } from '../lib/api';
 import { cached } from '../lib/cache';
+import { overlaySettlements, overlayTx, readOutbox } from '../lib/outbox';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { displayName } from '../lib/profile';
@@ -45,7 +46,7 @@ export function Transactions() {
     let live = true;
     setError(null);
     cached(`${me.userId}:tx:${month}`, () => listTransactions(month))
-      .then((r) => { if (live) { setRows(r.data); setStale(r.stale); } })
+      .then((r) => { if (live) { setRows(overlayTx(r.data, readOutbox(me.userId), me, { from: month, to: month })); setStale(r.stale); } })
       .catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };
   }, [me, month, version]);
@@ -65,7 +66,7 @@ export function Transactions() {
     if (!me?.householdId) return;
     let live = true;
     cached(`${me.userId}:settlements`, listSettlements)
-      .then((r) => { if (live) setSettledIds(new Set(r.data.flatMap((s) => (s.transaction_id ? [s.transaction_id] : [])))); })
+      .then((r) => { if (live) setSettledIds(new Set(overlaySettlements(r.data, readOutbox(me.userId)).flatMap((s) => (s.transaction_id ? [s.transaction_id] : [])))); })
       .catch(() => { /* tags are a nicety */ });
     return () => { live = false; };
   }, [me?.userId, me?.householdId, version]); // eslint-disable-line react-hooks/exhaustive-deps // don't show last month's entries under this month's title
@@ -129,6 +130,7 @@ export function Transactions() {
                       <span className="tx-cat">{catName.get(t.category_id) ?? 'Category'}</span>
                       {t.scope === 'shared' && <span className="tag shared">Shared · {t.paid_by === me.userId ? 'you paid' : `${(partnerOf(me) ? displayName(partnerOf(me)!) : 'partner')} paid`}</span>}
                       {settledIds.has(t.id) && <span className="tag settled">✓ Settled</span>}
+                      {t.pending && <span className="tag pending">Waiting to sync</span>}
                       {t.note && <span className="tx-note">{t.note}</span>}
                     </span>
                     <span className={`tx-amt num ${t.type}`}>

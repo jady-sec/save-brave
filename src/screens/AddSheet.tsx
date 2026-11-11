@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { haptic } from '../components/Celebration';
 import { SplitEditor } from '../components/SplitEditor';
-import { deleteSettlement, deleteTransaction, friendlyError, listTransactionsRange, saveTransaction, settleExpense, settlementFor } from '../lib/api';
+import { deleteSettlement, deleteTransaction, friendlyError, listSettlements, listTransactionsRange, sendOp, settleExpenseRow } from '../lib/api';
 import { cached } from '../lib/cache';
 import { frequentEntries, type Frequent } from '../lib/frequent';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
+import { dropFromOutbox, overlaySettlements, submit } from '../lib/outbox';
 import { displayName } from '../lib/profile';
-import { notifyPartner } from '../lib/push';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { computeSplit, toSplitInput, type SplitMode } from '../lib/split';
 import type { Scope, Settlement, Split, Tx, TxType } from '../lib/types';
@@ -23,7 +23,7 @@ const remember = (k: string, v: string) => { try { localStorage.setItem(k, v); }
 export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
-  const { me, categories, changed } = useMe();
+  const { me, categories, changed, outbox } = useMe();
   const partner = me ? partnerOf(me) : null;
   const myId = me?.userId ?? '';
   const [type, setType] = useState<TxType>(editing?.type ?? 'expense');
@@ -43,14 +43,15 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [repeats, setRepeats] = useState<Frequent[]>([]);
-  // A shared entry may already be settled on its own (migration 0015): undefined while loading.
-  const [settled, setSettled] = useState<Settlement | null | undefined>(editing?.scope === 'shared' ? undefined : null);
+  // A shared entry may already be settled on its own (migration 0015), maybe offline and not synced yet: undefined while loading.
+  const [settlements, setSettlements] = useState<Settlement[] | undefined>(editing?.scope === 'shared' ? undefined : []);
   useEffect(() => {
-    if (editing?.scope !== 'shared') return;
+    if (editing?.scope !== 'shared' || !me) return;
     let live = true;
-    settlementFor(editing.id).then((s) => { if (live) setSettled(s); }).catch(() => { if (live) setSettled(null); });
+    cached(`${me.userId}:settlements`, listSettlements).then((r) => { if (live) setSettlements(r.data); }).catch(() => { if (live) setSettlements([]); });
     return () => { live = false; };
-  }, [editing]);
+  }, [editing, me?.userId]); // eslint-disable-line react-hooks/exhaustive-deps
+  const settled = settlements && (overlaySettlements(settlements, outbox).find((s) => s.transaction_id === editing?.id) ?? null);
 
   // Repeat chips: your most frequent entries from the last 3 months (from the offline copy when there's no signal).
   useEffect(() => {
@@ -142,9 +143,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     }
     setBusy(true); setError(null);
     try {
-      const id = await saveTransaction({ id: editing?.id, type, scope, amount_cents: cents, date, category_id: selected.id, note,
-        ...(shared ? { paid_by: paidBy, splits: splits! } : {}) });
-      if (shared && !editing && id) notifyPartner({ transaction_id: id });
+      // Offline it waits on the phone and syncs later (lib/outbox); a server refusal still shows here.
+      await submit(myId, { kind: 'tx', id: editing?.id ?? crypto.randomUUID(), create: !editing,
+        input: { type, scope, amount_cents: cents, date, category_id: selected.id, note, ...(shared ? { paid_by: paidBy, splits: splits! } : {}) } }, sendOp);
       haptic();
       remember(lastCatKey(type, scope), selected.id);
       if (shared) remember(payerKey(selected.id), paidBy);
@@ -158,13 +159,18 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
 
   async function settleShare(from = myId) {
     setBusy(true); setError(null);
-    try { notifyPartner({ settlement_id: await settleExpense(me!, editing!, from) }); haptic(); changed(); onClose(); }
+    const row = settleExpenseRow(me!, editing!, from);
+    try { await submit(myId, { kind: 'settle', id: row.id, row }, sendOp); haptic(); changed(); onClose(); }
     catch (err) { setError(`Not settled. ${friendlyError((err as Error).message)}`); setBusy(false); }
   }
   async function undoSettle() {
     if (!settled || !confirm('Undo this settlement? The amount goes back on the balance.')) return;
     setBusy(true); setError(null);
-    try { await deleteSettlement(settled.id); setSettled(null); changed(); }
+    try {
+      if (settled.pending) dropFromOutbox(myId, settled.id); // never reached the server
+      else { await deleteSettlement(settled.id); setSettlements((l) => l?.filter((s) => s.id !== settled.id)); }
+      changed();
+    }
     catch (err) { setError(`Not undone. ${friendlyError((err as Error).message)}`); }
     setBusy(false);
   }
@@ -172,7 +178,12 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
   async function remove() {
     if (!editing || !confirm(shared ? 'Delete this shared entry for both of you?' : 'Delete this entry?')) return;
     setBusy(true); setError(null);
-    try { await deleteTransaction(editing.id); changed(); onClose(); }
+    // An entry made offline only needs forgetting; a waiting edit of a synced one goes with the delete.
+    const queued = outbox.find((o) => o.id === editing.id);
+    try {
+      if (!(queued?.kind === 'tx' && queued.create)) await deleteTransaction(editing.id);
+      dropFromOutbox(myId, editing.id); changed(); onClose();
+    }
     catch (err) { setError(`Not deleted. ${friendlyError((err as Error).message)}`); setBusy(false); }
   }
 

@@ -4,6 +4,7 @@ import { Screen } from '../components/Screen';
 import { friendlyError, listPlans, listTransactionsRange } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
+import { overlayTx, readOutbox } from '../lib/outbox';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import type { Plan, Tx } from '../lib/types';
@@ -24,7 +25,7 @@ export function History() {
     if (!me) return;
     let live = true;
     Promise.all([cached(`${me.userId}:history:${to}`, () => listTransactionsRange(from, to)), cached(`${me.userId}:plans:me`, () => listPlans('me'))])
-      .then(([t, p]) => { if (live) { setData({ txs: t.data, plans: p.data }); setStale(t.stale || p.stale); } })
+      .then(([t, p]) => { if (live) { setData({ txs: overlayTx(t.data, readOutbox(me.userId), me, { from, to, asc: true }), plans: p.data }); setStale(t.stale || p.stale); } })
       .catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };
   }, [me, version, from, to]);

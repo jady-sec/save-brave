@@ -6,6 +6,7 @@ import { TrendCards } from '../components/TrendCards';
 import { friendlyError, listContributions, listPlans, listTransactionsRange } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
+import { overlayTx, readOutbox } from '../lib/outbox';
 import { categoryShares, spendPace } from '../lib/insights';
 import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
@@ -36,7 +37,7 @@ export function Insights() {
       cached(`${me.userId}:goal-contributions`, listContributions),
     ]).then(([t, p, c]) => {
       if (!live) return;
-      setData({ txs: t.data, plans: p.data, goalsSaved: c.data.reduce((s, x) => s + x.amount_cents, 0) });
+      setData({ txs: overlayTx(t.data, readOutbox(me.userId), me, { from, to: month, asc: true }), plans: p.data, goalsSaved: c.data.reduce((s, x) => s + x.amount_cents, 0) });
       setStale(t.stale || p.stale || c.stale); setError(null);
     }).catch((e) => { if (live) setError(friendlyError(e.message)); });
     return () => { live = false; };

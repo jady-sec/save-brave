@@ -20,6 +20,7 @@ import { Settings } from './screens/Settings';
 import { Transactions } from './screens/Transactions';
 import { friendlyError, listTransactions, runRecurring } from './lib/api';
 import { cached } from './lib/cache';
+import { discardFailed } from './lib/outbox';
 import { todayLocal } from './lib/month';
 import type { Tx } from './lib/types';
 import { useSession } from './useSession';
@@ -44,7 +45,9 @@ function More() {
 }
 
 function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeSheet: () => void }) {
-  const { me, error, refresh, openEntry, stale, changed, version } = useMe();
+  const { me, error, refresh, openEntry, stale, changed, version, outbox } = useMe();
+  const waiting = outbox.filter((o) => !o.error).length;
+  const failed = outbox.filter((o) => o.error);
   const [skipped, setSkipped] = useState(false);
   const [ignoredJoin, setIgnoredJoin] = useState(false);
   const [recurringError, setRecurringError] = useState<string | null>(null);
@@ -100,7 +103,16 @@ function Shell({ sheet, closeSheet }: { sheet: { editing?: Tx } | null; closeShe
 
   return (
     <div className="app">
-      {stale && <p className="notice-inline offline" role="status">Offline: showing what was last loaded. Adding and editing need a connection.</p>}
+      {(stale || waiting > 0) && <p className="notice-inline offline" role="status">
+        {stale ? 'Offline: showing what was last loaded. ' : ''}
+        {waiting ? `${waiting} ${waiting === 1 ? 'change' : 'changes'} saved on this phone, syncing when you're back online.` : "You can still add entries and settle up; they sync when you're back online."}
+      </p>}
+      {failed.length > 0 && (
+        <div className="notice" role="alert">
+          <p>{failed.length === 1 ? 'A change' : `${failed.length} changes`} made offline couldn't be saved: {friendlyError(failed[0].error!)}</p>
+          <button type="button" className="btn" onClick={() => { discardFailed(me.userId); changed(); }}>Discard</button>
+        </div>
+      )}
       {recurringError && (
         <div className="notice" role="alert">
           <p>Couldn't add recurring entries: {recurringError}</p>
