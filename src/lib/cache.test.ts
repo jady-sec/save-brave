@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { cached, clearCache, isNetworkError } from './cache';
 
 function memStorage(): Storage {
@@ -48,3 +48,12 @@ describe('cached', () => {
 
 test.each([['TypeError: Failed to fetch', true], ['Load failed', true], ['NetworkError when attempting to fetch resource.', true], ['permission denied', false]])(
   'isNetworkError(%j) = %s', (msg, expected) => expect(isNetworkError(new Error(msg))).toBe(expected));
+
+test('when the phone says it is offline, shows the saved copy without waiting on the server', async () => {
+  const s = memStorage();
+  await cached('u1:tx', async () => [1], s);
+  vi.stubGlobal('navigator', { onLine: false });
+  try {
+    expect(await cached('u1:tx', () => new Promise<number[]>(() => {}), s)).toEqual({ data: [1], stale: true });
+  } finally { vi.unstubAllGlobals(); }
+});

@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { clearOutbox, discardFailed, dropFromOutbox, enqueue, flushOutbox, overlaySettlements, overlayTx, readOutbox, submit, type Op } from './outbox';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { SEND_TIMEOUT_MS, clearOutbox, discardFailed, dropFromOutbox, enqueue, flushOutbox, overlaySettlements, overlayTx, readOutbox, submit, type Op } from './outbox';
 import type { Settlement, Tx } from './types';
 
 const memStorage = (): Storage => {
@@ -139,4 +139,31 @@ test('a change that failed earlier does not hold back the next one', async () =>
   const s = memStorage();
   enqueue('u1', { ...txOp('old'), error: 'refused' }, s);
   await expect(submit('u1', txOp('a'), async () => { throw new Error('bad category'); }, s)).rejects.toThrow('bad category');
+});
+
+describe('never hangs offline', () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+  test('when the phone says it is offline, queues without trying the server', async () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    const s = memStorage(); let tried = false;
+    expect(await submit('u1', txOp('a'), async () => { tried = true; }, s)).toBe('queued');
+    expect(tried).toBe(false);
+  });
+  test('a server that never answers: queued after the timeout', async () => {
+    vi.useFakeTimers();
+    const s = memStorage();
+    const p = submit('u1', txOp('a'), () => new Promise(() => {}), s);
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS);
+    expect(await p).toBe('queued');
+    expect(readOutbox('u1', s).map((o) => o.id)).toEqual(['a']);
+  });
+  test('a stuck sync gives up, keeps the change, and the next sync can run', async () => {
+    vi.useFakeTimers();
+    const s = memStorage();
+    enqueue('u1', txOp('a'), s);
+    const p = flushOutbox('u1', () => new Promise(() => {}), s);
+    await vi.advanceTimersByTimeAsync(SEND_TIMEOUT_MS);
+    expect(await p).toEqual([]);
+    expect((await flushOutbox('u1', async () => {}, s)).map((o) => o.id)).toEqual(['a']);
+  });
 });

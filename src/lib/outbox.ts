@@ -46,13 +46,20 @@ export function discardFailed(userId: string, storage: Storage | null = defaultS
 }
 export function clearOutbox(userId: string, storage: Storage | null = defaultStorage()) { write(userId, [], storage); }
 
+// Offline, supabase-js can sit for 30s+ retrying a token renewal before a request even starts, so never wait on it
+// longer than this. A send that times out but did reach the server is safe to resend: the change carries its id.
+export const SEND_TIMEOUT_MS = 6000;
+const timed = (send: Send, op: Op) => Promise.race([send(op),
+  new Promise<never>((_, reject) => setTimeout(() => reject(new TypeError('Failed to fetch: timed out')), SEND_TIMEOUT_MS))]);
+const offlineNow = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
 let running: Promise<Op[]> | null = null;
 /** Sends what's waiting, oldest first. Stops at the first network error; a refused change is marked and skipped. Returns what was sent. */
 export function flushOutbox(userId: string, send: Send, storage: Storage | null = defaultStorage()): Promise<Op[]> {
   running ??= (async () => {
     const sent: Op[] = [];
     for (const op of readOutbox(userId, storage).filter((o) => !o.error)) {
-      try { await send(op); }
+      try { await timed(send, op); }
       catch (e) {
         if (isNetworkError(e)) break;
         write(userId, readOutbox(userId, storage).map((o) => (o.id === op.id ? { ...o, error: (e as Error).message } : o)), storage);
@@ -68,8 +75,9 @@ export function flushOutbox(userId: string, send: Send, storage: Storage | null 
 
 /** Sends now when nothing is waiting (a refusal is thrown, for the form to show); otherwise or offline, it waits its turn. */
 export async function submit(userId: string, op: Op, send: Send, storage: Storage | null = defaultStorage()): Promise<'sent' | 'queued'> {
+  if (offlineNow()) { enqueue(userId, op, storage); return 'queued'; }
   if (!readOutbox(userId, storage).some((o) => !o.error)) {
-    try { await send(op); return 'sent'; }
+    try { await timed(send, op); return 'sent'; }
     catch (e) { if (!isNetworkError(e)) throw e; enqueue(userId, op, storage); return 'queued'; }
   }
   enqueue(userId, op, storage);

@@ -6,6 +6,8 @@ export const isNetworkError = (e: unknown) => /failed to fetch|load failed|netwo
 
 export async function cached<T>(key: string, fetcher: () => Promise<T>, storage: Storage | null = defaultStorage()): Promise<{ data: T; stale: boolean }> {
   try {
+    // Offline the request can stall for 30s+ (token renewal retries), so go straight to the saved copy.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new TypeError('Failed to fetch: offline');
     const data = await fetcher();
     try { storage?.setItem(PREFIX + key, JSON.stringify(data)); } catch { /* quota or private mode */ }
     return { data, stale: false };

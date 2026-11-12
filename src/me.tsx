@@ -35,7 +35,7 @@ export function MeProvider({ user, openEntry, children }: { user: { id: string; 
   useEffect(() => subscribeOutbox(() => setOutbox(readOutbox(user.id))), [user.id]);
   // Sends what was saved offline. getSession first: it renews a token that expired while the phone was offline.
   const sync = useCallback(async () => {
-    if (!readOutbox(user.id).some((o) => !o.error)) return;
+    if (navigator.onLine === false || !readOutbox(user.id).some((o) => !o.error)) return;
     await supabase.auth.getSession().catch(() => {});
     await flushOutbox(user.id, sendOp);
     changed(); // sent or refused: either way the lists change
