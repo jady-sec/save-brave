@@ -5,7 +5,7 @@ import { Avatar } from '../components/Avatar';
 import { CatBadge } from '../components/CatBadge';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
-import { friendlyError, getPlan, listRecurring, listTransactions, listTransactionsRange } from '../lib/api';
+import { friendlyError, getPlan, listRecurring, listTransactions, listTransactionsRange, saveCategory } from '../lib/api';
 import { budgetVsActual } from '../lib/budget';
 import { cached } from '../lib/cache';
 import { overlayTx, readOutbox } from '../lib/outbox';
@@ -21,7 +21,7 @@ import { useFollowToday } from '../useFollowToday';
 import { MonthSwitcher } from './Transactions';
 
 export function Overview() {
-  const { me, categories, version } = useMe();
+  const { me, categories, version, refresh } = useMe();
   const [theme, setTheme] = useTheme();
   const [params, setParams] = useSearchParams(); // History links here with ?m=YYYY-MM
   const asked = params.get('m');
@@ -68,6 +68,15 @@ export function Overview() {
   }, [me?.userId, version]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const catName = useMemo(() => new Map(categories.map((c) => [c.id, c.name])), [categories]);
+  // Same rename as Settings, right from the card. Shared names change for both of you.
+  async function rename(id: string) {
+    const c = categories.find((x) => x.id === id);
+    const next = c && prompt('Rename category', c.name)?.trim();
+    if (!c || !next || next === c.name) return;
+    try { await saveCategory(me!, { id, name: next, type: c.type, scope: c.scope }); await refresh(); }
+    catch (e) { setError(`Not renamed. ${friendlyError((e as Error).message)}`); }
+  }
+
   if (!me) return null;
   const r = data ? budgetVsActual(me.userId, data.txs, data.mine, data.home) : null;
   const name = (id: string) => catName.get(id) ?? 'Category';
@@ -155,7 +164,7 @@ export function Overview() {
           {rows.length === 0 ? <p className="empty muted">No spending this month yet.</p> : (
             <ul className="budget-grid">
               {rows.map((x) => (
-                <li key={x.category_id}>
+                <li key={x.category_id} className="budget-item">
                   {/* Opens that category's entries for this month. */}
                   <Link to={`/tx?m=${month}&cat=${x.category_id}`} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
                   <CatBadge id={x.category_id} />
@@ -175,6 +184,7 @@ export function Overview() {
                     </div>
                   )}
                   </Link>
+                  <button type="button" className="btn icon card-edit" aria-label={`Rename ${name(x.category_id)}`} onClick={() => rename(x.category_id)}><Icon name="edit" size={18} /></button>
                 </li>
               ))}
             </ul>
