@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CatBadge } from '../components/CatBadge';
 import { Icon } from '../components/Icon';
 import { Screen } from '../components/Screen';
@@ -29,14 +30,19 @@ export function MonthSwitcher({ month, onChange }: { month: string; onChange: (m
 
 export function Transactions() {
   const { me, categories, version, openEntry } = useMe();
-  const [month, setMonth] = useState(monthKey(todayLocal()));
+  // The Month screen's category cards link here with ?m=YYYY-MM&cat=<id>.
+  const [params, setParams] = useSearchParams();
+  const askedMonth = params.get('m');
+  const [month, setMonth] = useState(askedMonth && /^d{4}-(0[1-9]|1[0-2])$/.test(askedMonth) ? askedMonth : monthKey(todayLocal()));
   useFollowToday(month, setMonth, version);
   const [rows, setRows] = useState<Tx[] | null>(null);
   const [stale, setStale] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<'all' | 'expense' | 'income'>('all');
   const [scope, setScope] = useState<'all' | 'personal' | 'shared'>('all');
-  const [cat, setCat] = useState('all');
+  const [cat, setCat] = useState(params.get('cat') ?? 'all');
+  // Read once, then drop them, like the Month screen: a relaunch starts unfiltered.
+  useEffect(() => { if (params.has('m') || params.has('cat')) setParams({}, { replace: true }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [q, setQ] = useState('');
   const [everywhere, setEverywhere] = useState(false); // search all months instead of this one
   const [all, setAll] = useState<Tx[] | null>(null);

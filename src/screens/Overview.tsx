@@ -155,7 +155,9 @@ export function Overview() {
           {rows.length === 0 ? <p className="empty muted">No spending this month yet.</p> : (
             <ul className="budget-grid">
               {rows.map((x) => (
-                <li key={x.category_id} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
+                <li key={x.category_id}>
+                  {/* Opens that category's entries for this month. */}
+                  <Link to={`/tx?m=${month}&cat=${x.category_id}`} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
                   <CatBadge id={x.category_id} />
                   <span className="name">{name(x.category_id)}</span>
                   <span className="amt num">
@@ -172,6 +174,7 @@ export function Overview() {
                       <span style={{ width: `${Math.min(100, pct(x))}%` }} />
                     </div>
                   )}
+                  </Link>
                 </li>
               ))}
             </ul>
