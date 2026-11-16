@@ -129,6 +129,12 @@ export async function saveTransaction(input: TxInput): Promise<string> {
   return must(await supabase.rpc('save_transaction', { p: input }));
 }
 
+/** Moves an entry between just-me and shared, keeping its id (migration 0018). Needs a connection. */
+export async function switchTransactionScope(input: TxInput & { id: string }): Promise<void> {
+  must(await supabase.rpc('switch_transaction_scope', { p: input }));
+  if (input.scope === 'shared') notifyPartner({ transaction_id: input.id });
+}
+
 export async function deleteTransaction(id: string): Promise<void> {
   must(await supabase.from('transactions').delete().eq('id', id));
 }

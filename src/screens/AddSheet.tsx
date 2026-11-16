@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { haptic } from '../components/Celebration';
 import { SplitEditor } from '../components/SplitEditor';
-import { deleteSettlement, deleteTransaction, friendlyError, listSettlements, listTransactionsRange, sendOp, settleExpenseRow } from '../lib/api';
+import { deleteSettlement, deleteTransaction, friendlyError, listSettlements, listTransactionsRange, sendOp, settleExpenseRow, switchTransactionScope } from '../lib/api';
 import { cached } from '../lib/cache';
 import { frequentEntries, type Frequent } from '../lib/frequent';
 import { centsToPlain, formatCents, parseCents } from '../lib/money';
@@ -98,7 +98,9 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
 
   const shared = scope === 'shared';
   // Shared needs a partner: a split made while alone couldn't cover both members once they join.
-  const canShare = !!partner && type === 'expense' && !editing;
+  // An existing entry can switch between Just me and Shared, but only by the person who added it (migration 0018).
+  const canShare = !!partner && type === 'expense' && (!editing || editing.created_by === myId);
+  const switching = !!editing && scope !== editing.scope;
   const choices = categories.filter((c) => c.type === type && c.scope === scope);
   // Preselect the last-used category for this type so the common add is: amount, Save.
   // When editing, never fall back: a silently different category would be saved.
@@ -136,6 +138,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     if (!cents) { setError('Enter an amount first.'); amountRef.current?.focus(); return; }
     if (!selected) { setError(choices.length ? 'Pick a category.' : `Add a ${shared ? 'shared ' : ''}${type} category in Settings first.`); return; }
     if (shared && !splits) { setError(splitError ?? 'Enter your share.'); return; }
+    if (settled && switching) { setError('This expense is settled. Undo the settlement below before making it just yours.'); return; }
     // The payment was for the old amounts; changing them would leave it not matching the expense.
     if (settled && editing && (cents !== editing.amount_cents || paidBy !== editing.paid_by
       || share(settled.from_user) !== editing.splits.find((x) => x.user_id === settled.from_user)?.share_cents)) {
@@ -143,9 +146,11 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
     }
     setBusy(true); setError(null);
     try {
-      // Offline it waits on the phone and syncs later (lib/outbox); a server refusal still shows here.
-      await submit(myId, { kind: 'tx', id: editing?.id ?? crypto.randomUUID(), create: !editing,
-        input: { type, scope, amount_cents: cents, date, category_id: selected.id, note, ...(shared ? { paid_by: paidBy, splits: splits! } : {}) } }, sendOp);
+      const input = { type, scope, amount_cents: cents, date, category_id: selected.id, note, ...(shared ? { paid_by: paidBy, splits: splits! } : {}) };
+      // Switching a synced entry needs a connection; anything else made offline waits on the phone (lib/outbox),
+      // including a switch of an entry that hasn't synced yet: it's still a new entry, just with the new values.
+      if (switching && !editing!.pending) await switchTransactionScope({ ...input, id: editing!.id });
+      else await submit(myId, { kind: 'tx', id: editing?.id ?? crypto.randomUUID(), create: !editing, input }, sendOp);
       haptic();
       remember(lastCatKey(type, scope), selected.id);
       if (shared) remember(payerKey(selected.id), paidBy);
@@ -209,7 +214,7 @@ export function AddSheet({ editing, onClose }: { editing?: Tx; onClose: () => vo
           <div className="segmented scope" role="group" aria-label="Personal or shared">
             {(['personal', 'shared'] as const).map((s) => (
               <button key={s} type="button" aria-pressed={scope === s} className={s}
-                onClick={() => { setScope(s); setCategoryId(null); }}>
+                onClick={() => { if (s === scope) return; setScope(s); setCategoryId(editing && s === editing.scope ? editing.category_id : null); }}>
                 {s === 'personal' ? 'Just me' : 'Shared'}
               </button>
             ))}
