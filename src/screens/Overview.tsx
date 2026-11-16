@@ -13,7 +13,7 @@ import { formatCents } from '../lib/money';
 import { addMonths, monthKey, todayLocal } from '../lib/month';
 import { dayStreak } from '../lib/streak';
 import { displayName } from '../lib/profile';
-import type { Plan, RecurringRule, Tx } from '../lib/types';
+import type { Plan, RecurringRule, Scope, Tx } from '../lib/types';
 import { upcomingBills } from '../lib/upcoming';
 import { useMe } from '../me';
 import { useTheme } from '../theme';
@@ -23,6 +23,7 @@ import { MonthSwitcher } from './Transactions';
 export function Overview() {
   const { me, categories, version, refresh } = useMe();
   const [theme, setTheme] = useTheme();
+  const [tab, setTab] = useState<Scope>('personal');
   const [params, setParams] = useSearchParams(); // History links here with ?m=YYYY-MM
   const asked = params.get('m');
   const [month, setMonth] = useState(asked && /^\d{4}-(0[1-9]|1[0-2])$/.test(asked) ? asked : monthKey(todayLocal()));
@@ -82,6 +83,8 @@ export function Overview() {
   const name = (id: string) => catName.get(id) ?? 'Category';
   const rows = r ? [...r.rows].sort((a, b) => Number(b.limit !== null) - Number(a.limit !== null) || name(a.category_id).localeCompare(name(b.category_id))) : [];
   const alerts = rows.filter((x) => x.level === 'warn' || x.level === 'over');
+  // Mine / Shared tabs over the budget cards; without a household everything is personal.
+  const shown = me.householdId ? rows.filter((x) => x.scope === tab) : rows;
 
   const pct = (x: { spent: number; limit: number | null }) => (x.limit ? Math.floor((x.spent * 100) / x.limit) : x.spent ? 100 : 0);
   const status = r && data!.mine ? (r.actualSavings < r.plannedSavings ? 'short' : 'met') : '';
@@ -161,9 +164,18 @@ export function Overview() {
           {!data!.mine && <p className="muted">No plan yet. <Link to="/plan">Set income, a savings target and limits</Link>.</p>}
 
           <h2 className="section-title">Your budget</h2>
-          {rows.length === 0 ? <p className="empty muted">No spending this month yet.</p> : (
+          {me.householdId && (
+            <div className="segmented scope" role="group" aria-label="Show my or shared budget">
+              {(['personal', 'shared'] as const).map((s) => (
+                <button key={s} type="button" aria-pressed={tab === s} className={s} onClick={() => setTab(s)}>
+                  {s === 'personal' ? 'Mine' : 'Shared'}
+                </button>
+              ))}
+            </div>
+          )}
+          {shown.length === 0 ? <p className="empty muted">{me.householdId && tab === 'shared' ? 'No shared spending this month yet.' : 'No spending this month yet.'}</p> : (
             <ul className="budget-grid">
-              {rows.map((x) => (
+              {shown.map((x) => (
                 <li key={x.category_id} className="budget-item">
                   {/* Opens that category's entries for this month. */}
                   <Link to={`/tx?m=${month}&cat=${x.category_id}`} className={`budget-card ${x.scope} ${x.level ?? ''}`}>
